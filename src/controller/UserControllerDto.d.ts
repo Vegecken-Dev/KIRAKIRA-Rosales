@@ -743,26 +743,6 @@ export type AdminClearUserInfoResponseDto = {
 }
 
 /**
- * 发送删除身份验证器的邮箱验证码的请求载荷
- */
-export type SendDeleteTotpAuthenticatorByEmailVerificationCodeRequestDto = {
-	/** 用户客户端使用的语言 */
-	clientLanguage: string;
-}
-
-/**
- * 发送删除身份验证器的邮箱验证码的请求响应
- */
-export type SendDeleteTotpAuthenticatorByEmailVerificationCodeResponseDto = {
-	/** 执行结果，程序执行成功，返回 true，程序执行失败，返回 false */
-	success: boolean;
-	/** 是否达到超时时间 */
-	isCoolingDown: boolean;
-	/** 附加的文本消息 */
-	message?: string;
-}
-
-/**
  * 已登录用户通过密码和 TOTP 验证码删除身份验证器的请求载荷
  */
 export type DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto = {
@@ -785,25 +765,6 @@ export type DeleteTotpAuthenticatorByTotpVerificationCodeResponseDto = {
 }
 
 /**
- * 用户创建 Email 身份验证器的请求响应
- */
-export type CreateUserEmailAuthenticatorResponseDto = {
-	/** 执行结果 */
-	success: boolean;
-	/** 身份验证器是否已存在 */
-	isExists: boolean;
-	/** 如果已存在，则返回验证器的类型 */
-	existsAuthenticatorType?: 'email' | 'totp';
-	/** Email 身份验证器信息 */
-	result?: {
-		/** Email */
-		email?: string;
-	}
-	/** 附加的文本消息 */
-	message?: string;
-}
-
-/**
  * 用户创建 TOTP 身份验证器的请求响应
  */
 export type CreateUserTotpAuthenticatorResponseDto = {
@@ -823,6 +784,27 @@ export type CreateUserTotpAuthenticatorResponseDto = {
 }
 
 /**
+ * 用户创建 Email 身份验证器的请求响应
+ */
+export type CreateUserEmailAuthenticatorResponseDto = {
+	/** 执行结果 */
+	success: boolean;
+	/** 身份验证器是否已存在 */
+	isExists: boolean;
+	/** 如果已存在，则返回验证器的类型 */
+	existsAuthenticatorType?: 'email' | 'totp';
+	/** Email 身份验证器信息 */
+	result?: {
+		/** Email */
+		email?: string;
+		/** Email Lower Case */
+		emailLowerCase?: string;
+	}
+	/** 附加的文本消息 */
+	message?: string;
+}
+
+/**
  * 用户确认绑定 TOTP 设备的请求载荷
  */
 export type ConfirmUserTotpAuthenticatorRequestDto = {
@@ -833,23 +815,18 @@ export type ConfirmUserTotpAuthenticatorRequestDto = {
 }
 
 /**
- * 用户验证邮箱身份验证器的请求载荷
+ * 用户确认绑定 TOTP 设备的请求响应
  */
-export type confirmUserEmailAuthenticatorRequestDto = {
-	/** Email */
-	email: string;
-	/** 验证码 */
-	verificationCode: string;
-}
-
-/**
- * 用户验证邮箱身份验证器的请求响应
- */
-export type confirmUserEmailAuthenticatorResponseDto = {
+export type ConfirmUserTotpAuthenticatorResponseDto = {
 	/** 执行结果 */
 	success: boolean;
-	/** 用户邮箱 */
-	email?: string;
+	/** 结果 */
+	result?: {
+		/** 验证器备份码 */
+		backupCode?: string[];
+		/** 验证器恢复码 */
+		recoveryCode?: string;
+	}
 	/** 附加的文本消息 */
 	message?: string;
 }
@@ -857,9 +834,7 @@ export type confirmUserEmailAuthenticatorResponseDto = {
 /**
  * 用户发送 Email 身份验证器验证邮件的请求载荷
  */
-export type sendUserEmailAuthenticatorVerificationCodeRequestDto = {
-	/** 用户的邮箱 */
-	email: string;
+export type SendUserEmailAuthenticatorVerificationCodeRequestDto = {
 	/** 用户客户端使用的语言 */
 	clientLanguage: string;
 }
@@ -877,18 +852,41 @@ export type SendUserEmailAuthenticatorVerificationCodeResponseDto = {
 }
 
 /**
- * 用户确认绑定 TOTP 设备的请求响应
+ * 验证 Email 身份验证器的验证码是否正确的请求载荷
  */
-export type ConfirmUserTotpAuthenticatorResponseDto = {
+export type CheckEmailAuthenticatorVerificationCodeRequestDto = {
+	/** 用户的邮箱 */
+	email: string;
+	/** 邮箱验证码 */
+	verificationCode: string;
+}
+
+/**
+ * 验证 Email 身份验证器的验证码是否正确的请求响应
+ */
+export type CheckEmailAuthenticatorVerificationCodeResponseDto = {
 	/** 执行结果 */
 	success: boolean;
-	/** 结果 */
-	result?: {
-		/** 验证器备份码 */
-		backupCode?: string[];
-		/** 验证器恢复码 */
-		recoveryCode?: string;
-	}
+	/** 附加的文本消息 */
+	message?: string;
+}
+
+/**
+ * 用户删除 Email 2FA 的请求载荷
+ */
+export type DeleteUserEmailAuthenticatorRequestDto = {
+	/** 被哈希一次的密码 */
+	passwordHash: string;
+	/** 邮箱验证码 */
+	verificationCode: string;
+}
+
+/**
+ * 用户删除 Email 2FA 的请求响应
+ */
+export type DeleteUserEmailAuthenticatorResponseDto = {
+	/** 执行结果 */
+	success: boolean;
 	/** 附加的文本消息 */
 	message?: string;
 }
@@ -916,4 +914,3 @@ export type CheckUserHave2FAServiceResponseDto = {
 	/** 附加的文本消息 */
 	message?: string;
 }
-

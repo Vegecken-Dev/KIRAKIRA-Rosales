@@ -35,6 +35,7 @@ import {
 	createUserEmailAuthenticatorService,
 	sendUserEmailAuthenticatorService,
 	checkEmailAuthenticatorVerificationCodeService,
+	deleteUserEmailAUthenticatorService,
 } from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
 import {
@@ -42,12 +43,13 @@ import {
 	AdminGetUserInfoRequestDto,
 	ApproveUserInfoRequestDto,
 	BlockUserByUIDRequestDto,
+	CheckEmailAuthenticatorVerificationCodeRequestDto,
 	CheckInvitationCodeRequestDto,
 	CheckUserHave2FAServiceRequestDto,
 	CheckUsernameRequestDto,
-	confirmUserEmailAuthenticatorRequestDto,
 	ConfirmUserTotpAuthenticatorRequestDto,
 	DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto,
+	DeleteUserEmailAuthenticatorRequestDto,
 	GetSelfUserInfoRequestDto,
 	GetUserInfoByUidRequestDto,
 	GetUserSettingsRequestDto,
@@ -55,7 +57,7 @@ import {
 	RequestSendChangeEmailVerificationCodeRequestDto,
 	RequestSendChangePasswordVerificationCodeRequestDto,
 	RequestSendVerificationCodeRequestDto,
-	SendDeleteTotpAuthenticatorByEmailVerificationCodeRequestDto,
+	SendUserEmailAuthenticatorVerificationCodeRequestDto,
 	UpdateOrCreateUserInfoRequestDto,
 	UpdateOrCreateUserSettingsRequestDto,
 	UpdateUserEmailRequestDto,
@@ -145,20 +147,6 @@ export const createUserTotpAuthenticatorController = async (ctx: koaCtx, next: k
 }
 
 /**
- * 用户创建 Email 身份验证器
- * @param ctx context
- * @param next context
- * @returns CreateUserEmailAuthenticatorResponseDto 创建结果
- */
-export const createUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
-	const uuid = ctx.cookies.get('uuid')
-	const token = ctx.cookies.get('token')
-	const result = await createUserEmailAuthenticatorService(uuid,token)
-	ctx.body = result
-	await next()
-}
-
-/**
  * 用户确认绑定 TOTP 设备
  * @param ctx context
  * @param next context
@@ -174,40 +162,6 @@ export const confirmUserTotpAuthenticatorController = async (ctx: koaCtx, next: 
 	const token = ctx.cookies.get('token')
 	const result = await confirmUserTotpAuthenticatorService(confirmUserTotpAuthenticatorRequest, uuid, token)
 	ctx.body = result
-	await next()
-}
-
-/**
- * 请求发送验证码，用于登录时验证身份验证器
- * @param ctx context
- * @param next context
- */
-export const sendUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
-	const data = ctx.request.body as Partial<RequestSendVerificationCodeRequestDto>
-
-	const requestSendVerificationCodeRequest: RequestSendVerificationCodeRequestDto = {
-		email: data.email || '',
-		clientLanguage: data.clientLanguage,
-	}
-
-	ctx.body = await sendUserEmailAuthenticatorService(requestSendVerificationCodeRequest)
-	await next()
-}
-
-/**
- * 验证 Email 身份验证器的验证码是否正确
- * @param ctx context
- * @param next context
- */
-export const checkEmailAuthenticatorVerificationCodeController = async (ctx: koaCtx, next: koaNext) => {
-	const data = ctx.request.body as Partial<confirmUserEmailAuthenticatorRequestDto>
-
-	const checkSendVerificationCodeRequest: confirmUserEmailAuthenticatorRequestDto = {
-		email: data.email || '',
-		verificationCode: data.verificationCode,
-	}
-
-	ctx.body = await checkEmailAuthenticatorVerificationCodeService(checkSendVerificationCodeRequest)
 	await next()
 }
 
@@ -228,6 +182,72 @@ export const deleteTotpAuthenticatorByTotpVerificationCodeController = async (ct
 	ctx.body = await deleteTotpAuthenticatorByTotpVerificationCodeService(deleteTotpAuthenticatorByTotpVerificationCodeRequest, uuid, token)
 	await next()
 }
+
+/**
+ * 用户创建 Email 身份验证器
+ * @param ctx context
+ * @param next context
+ * @returns CreateUserEmailAuthenticatorResponseDto 创建结果
+ */
+export const createUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	const result = await createUserEmailAuthenticatorService(uuid, token)
+	ctx.body = result
+	await next()
+}
+
+/**
+ * 请求发送验证码，用于登录时验证身份验证器
+ * @param ctx context
+ * @param next context
+ */
+export const sendUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<SendUserEmailAuthenticatorVerificationCodeRequestDto>
+
+	const sendUserEmailAuthenticatorVerificationCodeRequest: SendUserEmailAuthenticatorVerificationCodeRequestDto = {
+		clientLanguage: data.clientLanguage,
+	}
+
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	ctx.body = await sendUserEmailAuthenticatorService(sendUserEmailAuthenticatorVerificationCodeRequest, uuid, token)
+	await next()
+}
+
+/**
+ * 用户删除 Email 2FA
+ * @param ctx context
+ * @param next context
+ */
+export const deleteUserEmailAUthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<DeleteUserEmailAuthenticatorRequestDto>
+	const deleteUserEmailAUthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto = {
+		passwordHash: data.passwordHash || '',
+		verificationCode: data.verificationCode || '',
+	}
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	ctx.body = await deleteUserEmailAUthenticatorService(deleteUserEmailAUthenticatorRequest, uuid, token)
+	await next()
+}
+
+// /**
+//  * 验证 Email 身份验证器的验证码是否正确
+//  * @param ctx context
+//  * @param next context
+//  */
+// export const checkEmailAuthenticatorVerificationCodeController = async (ctx: koaCtx, next: koaNext) => {
+// 	const data = ctx.request.body as Partial<CheckEmailAuthenticatorVerificationCodeRequestDto>
+
+// 	const checkSendVerificationCodeRequest: CheckEmailAuthenticatorVerificationCodeRequestDto = {
+// 		email: data.email || '',
+// 		verificationCode: data.verificationCode,
+// 	}
+
+// 	ctx.body = await checkEmailAuthenticatorVerificationCodeService(checkSendVerificationCodeRequest)
+// 	await next()
+// }
 
 /**
  * 通过 Email 检查用户是否已开启 2FA 身份验证器
@@ -564,7 +584,6 @@ export const checkInvitationCodeController = async (ctx: koaCtx, next: koaNext) 
 	ctx.body = await checkInvitationCodeService(checkInvitationCodeRequestDto)
 	await next()
 }
-
 
 /**
  * 请求发送验证码，用于修改邮箱

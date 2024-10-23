@@ -38,7 +38,9 @@ import {
 	checkUserHave2FAByUUIDController,
 	createUserEmailAuthenticatorController,
 	sendUserEmailAuthenticatorController,
-	checkEmailAuthenticatorVerificationCodeController,
+	deleteUserEmailAUthenticatorController,
+	// DELETE ME ↓↓↓↓↓↓↓↓↓↓
+	// checkEmailAuthenticatorVerificationCodeController,
 } from '../controller/UserController.js'
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
 import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
@@ -48,10 +50,8 @@ const router = new Router()
 
 // router-begin
 
-router.get('/', helloWorld) // 测试 // DELETE
-router.get('/02/koa/hello', helloWorld) // 测试 // DELETE
-// router.get('/02/koa/serverInfo', activeHeartBeatMongoDBShardInfo) // 返回 MongoDB 心跳数据库中存储的心跳数据的连接信息，前提是环境变量中已有心跳数据库连接信息 // DELETE
-// https://localhost:9999/02/koa/serverInfo
+router.get('/', helloWorld) // 测试 // DELETE ME
+router.get('/02/koa/hello', helloWorld) // 测试 // DELETE ME
 
 
 
@@ -85,25 +85,7 @@ router.post('/user/confirmUserTotpAuthenticator', confirmUserTotpAuthenticatorCo
 // https://localhost:9999/user/confirmUserTotpAuthenticator
 // {
 // 	"clientOtp": "XXXXXX",
-// 	"otpAuth": "XXXXXXXXXXXXXXXXX"
-// }
-
-router.post('/user/createEmailAuthenticator', createUserEmailAuthenticatorController) // 用户创建 Email 身份验证器
-// https://localhost:9999/user/createEmailAuthenticator
-// cookie: uuid, token
-
-router.post('/user/sendUserEmailAuthenticator', sendUserEmailAuthenticatorController) // 用户发送 Email 身份验证器验证码
-// https://localhost:9999/user/sendUserEmailAuthenticator
-// {
-// 	 "email": "aaa@aaa.aaa",
-//   "clientLanguage": "zh-Hans-CN",
-// 	 "verificationCode": "ZZZZZZ"
-// }
-
-router.post('/user/checkEmailAuthenticatorVerificationCode', checkEmailAuthenticatorVerificationCodeController) // 检查 Email 身份验证器验证码是否正确
-// {
-// 	 "email": "aaa@aaa.aaa",
-// 	 "verificationCode": "ZZZZZZ"
+// 	"otpAuth": "YYYYYYYYYYYYYYYYYYYYYYYYYY"
 // }
 
 router.delete('/user/deleteTotpAuthenticatorByTotpVerificationCodeController', deleteTotpAuthenticatorByTotpVerificationCodeController) // 已登录用户通过密码和 TOTP 验证码删除身份验证器
@@ -113,13 +95,31 @@ router.delete('/user/deleteTotpAuthenticatorByTotpVerificationCodeController', d
 // 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 // }
 
-router.delete('/user/deleteUserAuthenticator', deleteTotpAuthenticatorByTotpVerificationCodeController) // 已登录用户通过密码和 TOTP 验证码删除 TOTP 身份验证器
-// https://localhost:9999/user/deleteUserAuthenticator
+router.post('/user/createEmailAuthenticator', createUserEmailAuthenticatorController) // 用户创建 Email 身份验证器
+// https://localhost:9999/user/createEmailAuthenticator
+// cookie: uuid, token
+
+router.post('/user/sendUserEmailAuthenticator', sendUserEmailAuthenticatorController) // 用户发送 Email 身份验证器验证码
+// https://localhost:9999/user/sendUserEmailAuthenticator
 // cookie: uuid, token
 // {
-//   "clientOtp": "XXXXXX",
-//   "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXX",
+//   "clientLanguage": "zh-Hans-CN",
 // }
+
+router.delete('/user/deleteUserEmailAUthenticator', deleteUserEmailAUthenticatorController) // 用户删除 Email 2FA
+// https://localhost:9999/user/deleteUserEmailAUthenticator
+// cookie: uuid, token
+// {
+// 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+// 	 "verificationCode": "YYYYYY"
+// }
+
+// DELETE ME ↓↓↓↓↓↓↓↓↓↓
+// router.post('/user/checkEmailAuthenticatorVerificationCode', checkEmailAuthenticatorVerificationCodeController) // 检查 Email 身份验证器验证码是否正确
+// // {
+// // 	 "email": "aaa@aaa.aaa",
+// // 	 "verificationCode": "XXXXXX"
+// // }
 
 router.get('/user/checkUserHave2FAByEmail', checkUserHave2FAByEmailController) // 通过 Email 检查用户是否已开启 2FA 身份验证器
 // https://localhost:9999/user/checkUserHave2FAByEmail

@@ -353,7 +353,7 @@ class UserEmailAuthenticatorSchemaFactory {
 		/** 用户的 UUID，关联用户安全集合的 UUID - 非空 */
 		UUID: { type: String, required: true },
 		/** 用户的 Email */
-		email: { type: String, required: true },
+		emailLowerCase: { type: String, required: true },
 		/** 是否启用 Email 身份验证器 - 非空 - 默认值：false */
 		enabled: { type: Boolean, required: true, default: false },
 		/** 系统专用字段-创建时间 - 非空 */
