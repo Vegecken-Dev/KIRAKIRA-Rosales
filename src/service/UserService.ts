@@ -3445,7 +3445,7 @@ export const sendUserEmailAuthenticatorService = async (sendUserEmailAuthenticat
 		const userAuthData = userAuthResult.result?.[0]
 		const email = userAuthData?.email
 
-		if (!userAuthResult.success || userAuthResult.result?.length !== 1 || email) {
+		if (!userAuthResult.success || userAuthResult.result?.length !== 1 || !email) {
 			await abortAndEndSession(session)
 			console.error('请求发送身份验证器的邮箱验证码失败，用户不存在')
 			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，用户不存在' }
@@ -3584,7 +3584,7 @@ export const sendUserEmailAuthenticatorService = async (sendUserEmailAuthenticat
  */
 export const checkEmailAuthenticatorVerificationCodeService = async (checkEmailAuthenticatorVerificationCodeRequest: CheckEmailAuthenticatorVerificationCodeRequestDto): Promise<CheckEmailAuthenticatorVerificationCodeResponseDto> => {
 	try {
-		if (!!checkEmailAuthenticatorVerificationCodeRequest.email && !!checkEmailAuthenticatorVerificationCodeRequest.verificationCode) {
+		if (!checkEmailAuthenticatorVerificationCodeRequest.email && !checkEmailAuthenticatorVerificationCodeRequest.verificationCode) {
 			console.error('ERROR', '用户通过邮箱验证码验证身份验证器失败时失败，参数不合法')
 			return { success: false, message: '用户通过邮箱验证码验证身份验证器失败时失败，参数不合法' }
 		}
