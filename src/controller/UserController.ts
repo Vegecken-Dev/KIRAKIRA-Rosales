@@ -35,7 +35,7 @@ import {
 	createUserEmailAuthenticatorService,
 	sendUserEmailAuthenticatorService,
 	checkEmailAuthenticatorVerificationCodeService,
-	deleteUserEmailAUthenticatorService,
+	deleteUserEmailAuthenticatorService,
 } from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
 import {
@@ -228,7 +228,7 @@ export const deleteUserEmailAUthenticatorController = async (ctx: koaCtx, next: 
 	}
 	const uuid = ctx.cookies.get('uuid')
 	const token = ctx.cookies.get('token')
-	ctx.body = await deleteUserEmailAUthenticatorService(deleteUserEmailAUthenticatorRequest, uuid, token)
+	ctx.body = await deleteUserEmailAuthenticatorService(deleteUserEmailAUthenticatorRequest, uuid, token)
 	await next()
 }
 

@@ -3650,7 +3650,7 @@ export const checkEmailAuthenticatorVerificationCodeService = async (checkEmailA
  * @param uuid 用户的 UUID
  * @param token 用户的 token
  */
-export const deleteUserEmailAUthenticatorService = async (deleteUserEmailAUthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto, uuid: string, token: string): Promise<DeleteUserEmailAuthenticatorResponseDto> => {
+export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAUthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto, uuid: string, token: string): Promise<DeleteUserEmailAuthenticatorResponseDto> => {
 	try {
 		if (!checkDeleteUserEmailAUthenticatorRequest(deleteUserEmailAUthenticatorRequest)) {
 			console.error('用户删除 Email 2FA 时失败，参数非法')
@@ -3711,18 +3711,31 @@ export const deleteUserEmailAUthenticatorService = async (deleteUserEmailAUthent
 			return { success: false, message: '用户删除 Email 2FA 时失败，验证失败或验证码错误' }
 		}
 
+		// 1. 清理已经发送的验证码
 		const { collectionName: UserEmailAuthenticatorVerificationCodeCollectionName, schemaInstance: UserEmailAuthenticatorVerificationCodeSchemaInstance } = UserEmailAuthenticatorVerificationCodeSchema
 		type UserEmailAuthenticatorVerificationCode = InferSchemaType<typeof UserEmailAuthenticatorVerificationCodeSchemaInstance>
-		const deleteUserEmailAUthenticatorWhere: QueryType<UserEmailAuthenticatorVerificationCode> = { UUID: uuid }
+		const deleteUserEmailAuthenticatorVerificationCodeWhere: QueryType<UserEmailAuthenticatorVerificationCode> = { UUID: uuid }
+		const deleteUserEmailAuthenticatorVerificationCodeResult = await deleteDataFromMongoDB(deleteUserEmailAuthenticatorVerificationCodeWhere, UserEmailAuthenticatorVerificationCodeSchemaInstance, UserEmailAuthenticatorVerificationCodeCollectionName, { session })
 
-		const deleteUserEmailAUthenticatorResult = await deleteDataFromMongoDB(deleteUserEmailAUthenticatorWhere, UserEmailAuthenticatorVerificationCodeSchemaInstance, UserEmailAuthenticatorVerificationCodeCollectionName, { session })
-
-		if (!deleteUserEmailAUthenticatorResult || !deleteUserEmailAUthenticatorResult.success) {
+		if (!deleteUserEmailAuthenticatorVerificationCodeResult || !deleteUserEmailAuthenticatorVerificationCodeResult.success) {
 			await abortAndEndSession(session)
-			console.error('用户删除 Email 2FA 时失败，删除该用户的验证码失败', { UUID: uuid })
-			return { success: false, message: '用户删除 Email 2FA 时失败，删除该用户的验证码失败' }
+			console.error('用户删除 Email 2FA 时失败，清理该用户的验证码失败', { UUID: uuid })
+			return { success: false, message: '用户删除 Email 2FA 时失败，清理该用户的验证码失败' }
 		}
 
+		// 2. 删除 Email 2FA
+		const { collectionName: UserEmailAuthenticatorCollectionName, schemaInstance: UserEmailAuthenticatorSchemaInstance } = UserEmailAuthenticatorSchema
+		type UserEmailAuthenticator = InferSchemaType<typeof UserEmailAuthenticatorSchemaInstance>
+		const deleteUserEmailAuthenticatorWhere: QueryType<UserEmailAuthenticator> = { UUID: uuid }
+		const deleteUserEmailAuthenticatorResult = await deleteDataFromMongoDB(deleteUserEmailAuthenticatorWhere, UserEmailAuthenticatorSchemaInstance, UserEmailAuthenticatorCollectionName, { session })
+
+		if (!deleteUserEmailAuthenticatorResult || !deleteUserEmailAuthenticatorResult.success) {
+			await abortAndEndSession(session)
+			console.error('用户删除 Email 2FA 时失败，删除该用户的邮箱验证失败', { UUID: uuid })
+			return { success: false, message: '用户删除 Email 2FA 时失败，删除该用户的邮箱验证失败' }
+		}
+
+		// 3. 重置用户的 2FA 类型
 		const resetUser2FATypeByUUIDResult = await resetUser2FATypeByUUID(uuid, session)
 
 		if (!resetUser2FATypeByUUIDResult) {
