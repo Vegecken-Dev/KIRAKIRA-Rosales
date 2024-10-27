@@ -220,15 +220,15 @@ export const sendUserEmailAuthenticatorController = async (ctx: koaCtx, next: ko
  * @param ctx context
  * @param next context
  */
-export const deleteUserEmailAUthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+export const deleteUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
 	const data = ctx.request.body as Partial<DeleteUserEmailAuthenticatorRequestDto>
-	const deleteUserEmailAUthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto = {
+	const deleteUserEmailAuthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto = {
 		passwordHash: data.passwordHash || '',
 		verificationCode: data.verificationCode || '',
 	}
 	const uuid = ctx.cookies.get('uuid')
 	const token = ctx.cookies.get('token')
-	ctx.body = await deleteUserEmailAuthenticatorService(deleteUserEmailAUthenticatorRequest, uuid, token)
+	ctx.body = await deleteUserEmailAuthenticatorService(deleteUserEmailAuthenticatorRequest, uuid, token)
 	await next()
 }
 

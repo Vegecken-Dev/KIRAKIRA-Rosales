@@ -38,9 +38,7 @@ import {
 	checkUserHave2FAByUUIDController,
 	createUserEmailAuthenticatorController,
 	sendUserEmailAuthenticatorController,
-	deleteUserEmailAUthenticatorController,
-	// DELETE ME ↓↓↓↓↓↓↓↓↓↓
-	// checkEmailAuthenticatorVerificationCodeController,
+	deleteUserEmailAuthenticatorController,
 } from '../controller/UserController.js'
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
 import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
@@ -106,8 +104,8 @@ router.post('/user/sendUserEmailAuthenticator', sendUserEmailAuthenticatorContro
 //   "clientLanguage": "zh-Hans-CN",
 // }
 
-router.delete('/user/deleteUserEmailAUthenticator', deleteUserEmailAUthenticatorController) // 用户删除 Email 2FA
-// https://localhost:9999/user/deleteUserEmailAUthenticator
+router.delete('/user/deleteUserEmailAuthenticator', deleteUserEmailAuthenticatorController) // 用户删除 Email 2FA
+// https://localhost:9999/user/deleteUserEmailAuthenticator
 // cookie: uuid, token
 // {
 // 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXX",

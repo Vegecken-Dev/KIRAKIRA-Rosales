@@ -3025,7 +3025,7 @@ export const deleteTotpAuthenticatorByTotpVerificationCodeService = async (delet
 }
 
 /**
- * 根据 UUID 重置 user-auth 表中用户的 authenticatorType 字段为 none，在 deleteTotpAuthenticatorByRecoveryCode, deleteTotpAuthenticatorByTotpVerificationCodeService 和 deleteUserEmailAUthenticatorService 中用到
+ * 根据 UUID 重置 user-auth 表中用户的 authenticatorType 字段为 none，在 deleteTotpAuthenticatorByRecoveryCode, deleteTotpAuthenticatorByTotpVerificationCodeService 和 deleteUserEmailAuthenticatorService 中用到
  * @param uuid 用户的 UUID
  * @param session Mongoose Session
  * @returns boolean 执行是否成功
@@ -3436,12 +3436,12 @@ export const sendUserEmailAuthenticatorService = async (sendUserEmailAuthenticat
 
 		type UserAuth = InferSchemaType<typeof userAuthSchemaInstance>
 
-		const deleteUserEmailAUthenticatorUserAuthWhere: QueryType<UserAuth> = { UUID: uuid }
-		const deleteUserEmailAUthenticatorUserAuthSelect: SelectType<UserAuth> = {
+		const deleteUserEmailAuthenticatorUserAuthWhere: QueryType<UserAuth> = { UUID: uuid }
+		const deleteUserEmailAuthenticatorUserAuthSelect: SelectType<UserAuth> = {
 			authenticatorType: 1,
 			email: 1,
 		}
-		const userAuthResult = await selectDataFromMongoDB<UserAuth>(deleteUserEmailAUthenticatorUserAuthWhere, deleteUserEmailAUthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
+		const userAuthResult = await selectDataFromMongoDB<UserAuth>(deleteUserEmailAuthenticatorUserAuthWhere, deleteUserEmailAuthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
 		const userAuthData = userAuthResult.result?.[0]
 		const email = userAuthData?.email
 
@@ -3646,13 +3646,13 @@ export const checkEmailAuthenticatorVerificationCodeService = async (checkEmailA
 
 /**
  * 用户删除 Email 2FA
- * @param deleteUserEmailAUthenticatorRequest
+ * @param deleteUserEmailAuthenticatorRequest
  * @param uuid 用户的 UUID
  * @param token 用户的 token
  */
-export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAUthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto, uuid: string, token: string): Promise<DeleteUserEmailAuthenticatorResponseDto> => {
+export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAuthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto, uuid: string, token: string): Promise<DeleteUserEmailAuthenticatorResponseDto> => {
 	try {
-		if (!checkDeleteUserEmailAUthenticatorRequest(deleteUserEmailAUthenticatorRequest)) {
+		if (!checkDeleteUserEmailAuthenticatorRequest(deleteUserEmailAuthenticatorRequest)) {
 			console.error('用户删除 Email 2FA 时失败，参数非法')
 			return { success: false, message: '用户删除 Email 2FA 时失败，参数非法' }
 		}
@@ -3662,7 +3662,7 @@ export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAUthent
 			return { success: false, message: '用户删除 Email 2FA 时失败，用户校验未通过' }
 		}
 
-		const { passwordHash, verificationCode } = deleteUserEmailAUthenticatorRequest
+		const { passwordHash, verificationCode } = deleteUserEmailAuthenticatorRequest
 
 		const session = await mongoose.startSession()
 		session.startTransaction()
@@ -3670,14 +3670,14 @@ export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAUthent
 		const { collectionName: userAuthCollectionName, schemaInstance: userAuthSchemaInstance } = UserAuthSchema
 		type UserAuth = InferSchemaType<typeof userAuthSchemaInstance>
 
-		const deleteUserEmailAUthenticatorUserAuthWhere: QueryType<UserAuth> = { UUID: uuid }
-		const deleteUserEmailAUthenticatorUserAuthSelect: SelectType<UserAuth> = {
+		const deleteUserEmailAuthenticatorUserAuthWhere: QueryType<UserAuth> = { UUID: uuid }
+		const deleteUserEmailAuthenticatorUserAuthSelect: SelectType<UserAuth> = {
 			authenticatorType: 1,
 			emailLowerCase: 1,
 			email: 1,
 			passwordHashHash: 1,
 		}
-		const userAuthResult = await selectDataFromMongoDB<UserAuth>(deleteUserEmailAUthenticatorUserAuthWhere, deleteUserEmailAUthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
+		const userAuthResult = await selectDataFromMongoDB<UserAuth>(deleteUserEmailAuthenticatorUserAuthWhere, deleteUserEmailAuthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
 		const userAuthData = userAuthResult.result?.[0]
 
 		if (!userAuthResult.success || userAuthResult.result?.length !== 1) {
@@ -4205,12 +4205,12 @@ const checkSendUserEmailAuthenticatorVerificationCodeRequest = (sendUserEmailAut
 
 /**
  * 检查用户删除 Email 2FA 的请求载荷
- * @param deleteUserEmailAUthenticatorRequest 用户删除 Email 2FA 的请求载荷
+ * @param deleteUserEmailAuthenticatorRequest 用户删除 Email 2FA 的请求载荷
  * @returns 检查结果，合法返回 true，不合法返回 false
  */
-const checkDeleteUserEmailAUthenticatorRequest = (deleteUserEmailAUthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto): boolean => {
+const checkDeleteUserEmailAuthenticatorRequest = (deleteUserEmailAuthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto): boolean => {
 	return (
-		!!deleteUserEmailAUthenticatorRequest.passwordHash
-		&& !!deleteUserEmailAUthenticatorRequest.verificationCode
+		!!deleteUserEmailAuthenticatorRequest.passwordHash
+		&& !!deleteUserEmailAuthenticatorRequest.verificationCode
 	)
 }
