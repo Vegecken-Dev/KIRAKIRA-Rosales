@@ -99,8 +99,9 @@ router.post('/user/createEmailAuthenticator', createUserEmailAuthenticatorContro
 
 router.post('/user/sendUserEmailAuthenticator', sendUserEmailAuthenticatorController) // 用户发送 Email 身份验证器验证码
 // https://localhost:9999/user/sendUserEmailAuthenticator
-// cookie: uuid, token
 // {
+// 	 "email": "aaa@aaa.aaa",
+// 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
 //   "clientLanguage": "zh-Hans-CN",
 // }
 
@@ -120,10 +121,7 @@ router.delete('/user/deleteUserEmailAuthenticator', deleteUserEmailAuthenticator
 // // }
 
 router.get('/user/checkUserHave2FAByEmail', checkUserHave2FAByEmailController) // 通过 Email 检查用户是否已开启 2FA 身份验证器
-// https://localhost:9999/user/checkUserHave2FAByEmail
-// {
-//   "email": "aaa@bbb.com",
-// }
+// https://localhost:9999/user/checkUserHave2FAByEmail?email=xxxxxxx
 
 router.get('/user/checkUserHave2FAByUUID', checkUserHave2FAByUUIDController) // 通过 UUID 检查用户是否已开启 2FA 身份验证器
 // https://localhost:9999/user/checkUserHave2FAByUUID

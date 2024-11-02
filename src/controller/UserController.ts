@@ -113,7 +113,8 @@ export const userLoginController = async (ctx: koaCtx, next: koaNext) => {
 	const userLoginRequest: UserLoginRequestDto = {
 		email: data?.email,
 		passwordHash: data?.passwordHash,
-		clientOtp: data?.clientOtp
+		clientOtp: data?.clientOtp,
+		verificationCode: data?.verificationCode
 	}
 	const userLoginResult = await userLoginService(userLoginRequest)
 
@@ -206,12 +207,14 @@ export const sendUserEmailAuthenticatorController = async (ctx: koaCtx, next: ko
 	const data = ctx.request.body as Partial<SendUserEmailAuthenticatorVerificationCodeRequestDto>
 
 	const sendUserEmailAuthenticatorVerificationCodeRequest: SendUserEmailAuthenticatorVerificationCodeRequestDto = {
-		clientLanguage: data.clientLanguage,
+		email: data?.email || '',
+		passwordHash: data?.passwordHash || '',
+		clientLanguage: data?.clientLanguage,
 	}
 
 	const uuid = ctx.cookies.get('uuid')
 	const token = ctx.cookies.get('token')
-	ctx.body = await sendUserEmailAuthenticatorService(sendUserEmailAuthenticatorVerificationCodeRequest, uuid, token)
+	ctx.body = await sendUserEmailAuthenticatorService(sendUserEmailAuthenticatorVerificationCodeRequest)
 	await next()
 }
 

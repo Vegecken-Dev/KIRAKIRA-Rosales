@@ -835,6 +835,10 @@ export type ConfirmUserTotpAuthenticatorResponseDto = {
  * 用户发送 Email 身份验证器验证邮件的请求载荷
  */
 export type SendUserEmailAuthenticatorVerificationCodeRequestDto = {
+	/** 用户邮箱 */
+	email: string;
+	/** 在前端已经 Hash 过一次的的密码 */
+	passwordHash: string;
 	/** 用户客户端使用的语言 */
 	clientLanguage: string;
 }
