@@ -68,13 +68,16 @@ import {
 	CheckEmailAuthenticatorVerificationCodeResponseDto,
 	DeleteUserEmailAuthenticatorRequestDto,
 	DeleteUserEmailAuthenticatorResponseDto,
+	SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto,
+	SendDeleteUserEmailAuthenticatorVerificationCodeResponseDto,
 } from '../controller/UserControllerDto.js'
 import { findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataFromMongoDB, updateData4MongoDB, selectDataByAggregateFromMongoDB, deleteDataFromMongoDB } from '../dbPool/DbClusterPool.js'
 import { DbPoolResultsType, QueryType, SelectType, UpdateType } from '../dbPool/DbClusterPoolTypes.js'
 import { UserAuthSchema, UserTotpAuthenticatorSchema, UserChangeEmailVerificationCodeSchema, UserChangePasswordVerificationCodeSchema, UserInfoSchema, UserInvitationCodeSchema, UserSettingsSchema, UserVerificationCodeSchema, UserEmailAuthenticatorSchema, UserEmailAuthenticatorVerificationCodeSchema } from '../dbPool/schema/UserSchema.js'
 import { getNextSequenceValueService } from './SequenceValueService.js'
 import { authenticator } from 'otplib'
-import { abortAndEndSession, commitSession } from '../common/MongoDBSessionTool.js'
+import { abortAndEndSession, commitSession, createAndStartSession } from '../common/MongoDBSessionTool.js'
+import { StorageClassAnalysisSchemaVersion } from '@aws-sdk/client-s3'
 
 authenticator.options = { window: 1 } // 设置 TOTP 宽裕一个窗口
 
@@ -362,7 +365,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 
 				await session.commitTransaction()
 				session.endSession()
-				return { success: true, email, uid, token, UUID: uuid, message: '使用恢复码登录成功，您的 TOTP 2FA 已删除', authenticatorType }
+				return { success: true, email, uid, token, UUID: uuid, message: '使用恢复码登录成功，你的 TOTP 2FA 已删除', authenticatorType }
 			} else {
 				const userTotpAuthenticatorSelect: SelectType<UserAuthenticator> = {
 					secret: 1,
@@ -1242,7 +1245,7 @@ export const RequestSendVerificationCodeService = async (requestSendVerification
 									if (sendMailResult.success) {
 										await session.commitTransaction()
 										session.endSession()
-										return { success: true, isTimeout: false, message: '注册验证码已发送至您注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
+										return { success: true, isTimeout: false, message: '注册验证码已发送至你注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
 									} else {
 										if (session.inTransaction()) {
 											await session.abortTransaction()
@@ -1707,7 +1710,7 @@ export const requestSendChangeEmailVerificationCodeService = async (requestSendC
 												if (sendMailResult.success) {
 													await session.commitTransaction()
 													session.endSession()
-													return { success: true, isCoolingDown: false, message: '修改邮箱的验证码已发送至您注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
+													return { success: true, isCoolingDown: false, message: '修改邮箱的验证码已发送至你注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
 												} else {
 													if (session.inTransaction()) {
 														await session.abortTransaction()
@@ -1883,7 +1886,7 @@ export const requestSendChangePasswordVerificationCodeService = async (requestSe
 												if (sendMailResult.success) {
 													await session.commitTransaction()
 													session.endSession()
-													return { success: true, isCoolingDown: false, message: '修改密码的验证码已发送至您注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
+													return { success: true, isCoolingDown: false, message: '修改密码的验证码已发送至你注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
 												} else {
 													if (session.inTransaction()) {
 														await session.abortTransaction()
@@ -3424,24 +3427,21 @@ export const sendUserEmailAuthenticatorService = async (sendUserEmailAuthenticat
 		todayStart.setHours(0, 0, 0, 0)
 
 		// 启动事务
-		const session = await mongoose.startSession()
-		session.startTransaction()
-
+		const session = await createAndStartSession()
 
 		const { collectionName: userAuthCollectionName, schemaInstance: userAuthSchemaInstance } = UserAuthSchema
 
 		type UserAuth = InferSchemaType<typeof userAuthSchemaInstance>
 
-		const deleteUserEmailAuthenticatorUserAuthWhere: QueryType<UserAuth> = { emailLowerCase: emailLowerCase }
-		const deleteUserEmailAuthenticatorUserAuthSelect: SelectType<UserAuth> = {
+		const sendUserEmailAuthenticatorUserAuthWhere: QueryType<UserAuth> = { emailLowerCase: emailLowerCase }
+		const sendUserEmailAuthenticatorUserAuthSelect: SelectType<UserAuth> = {
 			passwordHashHash: 1,
 			authenticatorType: 1,
 			UUID: 1,
 		}
-		const userAuthResult = await selectDataFromMongoDB<UserAuth>(deleteUserEmailAuthenticatorUserAuthWhere, deleteUserEmailAuthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
+		const userAuthResult = await selectDataFromMongoDB<UserAuth>(sendUserEmailAuthenticatorUserAuthWhere, sendUserEmailAuthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
 		const userAuthData = userAuthResult.result?.[0]
-		const uuid = userAuthData.UUID
-		const passwordHashHash = userAuthData.passwordHashHash
+		const { UUID: uuid, passwordHashHash } = userAuthData
 
 		if (!userAuthResult.success || userAuthResult.result?.length !== 1 || !email) {
 			await abortAndEndSession(session)
@@ -3540,7 +3540,7 @@ export const sendUserEmailAuthenticatorService = async (sendUserEmailAuthenticat
 			// 请不要使用 “您”
 			const mailHtmlCHS = `
 					<p>验证 2FA 的验证码是：<strong>${verificationCode}</strong></p>
-					注意：你可以使用这个验证码来验证您的 2FA（二重身份验证器）。
+					注意：你可以使用这个验证码来验证你的 2FA（二重身份验证器）。
 					<br>
 					验证码 30 分钟内有效。请注意安全，不要向他人泄露你的验证码。
 				`
@@ -3567,7 +3567,178 @@ export const sendUserEmailAuthenticatorService = async (sendUserEmailAuthenticat
 
 			await session.commitTransaction()
 			session.endSession()
-			return { success: true, isCoolingDown: false, message: '验证身份验证器的邮箱验证码已发送至您注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
+			return { success: true, isCoolingDown: false, message: '验证身份验证器的邮箱验证码已发送至你注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
+		} catch (error) {
+			if (session.inTransaction()) {
+				await session.abortTransaction()
+			}
+			session.endSession()
+			console.error('ERROR', '请求发送验证身份验证器的邮箱验证码时出错，邮件发送时出错', error)
+			return { success: false, isCoolingDown: true, message: '请求发送验证身份验证器的邮箱验证码时出错，邮件发送时出错' }
+		}
+	} catch (error) {
+		console.error('ERROR', '请求发送验证身份验证器的邮箱验证码时出错，未知错误', error)
+		return { success: false, isCoolingDown: false, message: '请求发送验证身份验证器的邮箱验证码时出错，未知错误' }
+	}
+}
+
+/**
+ * 用户发送删除 Email 身份验证器验证邮件
+ * @param sendDeleteUserEmailAuthenticatorVerificationCodeRequest 用户发送删除 Email 身份验证器验证邮件的请求载荷
+ * @returns 用户发送 Email 身份验证器验证邮件的请求响应
+ */
+export const sendDeleteUserEmailAuthenticatorService = async (sendDeleteUserEmailAuthenticatorVerificationCodeRequest: SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto, uuid: string, token: string): Promise<SendDeleteUserEmailAuthenticatorVerificationCodeResponseDto> => {
+	try {
+		if (!checkSendDeleteUserEmailAuthenticatorVerificationCodeRequest(sendDeleteUserEmailAuthenticatorVerificationCodeRequest)) {
+			console.error('ERROR', '请求发送身份验证器的邮箱验证码失败，参数不合法')
+			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，参数不合法' }
+		}
+
+		if (!await checkUserTokenByUUID(uuid, token)) {
+			console.error('请求发送身份验证器的邮箱验证码失败，用户校验未通过')
+			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，用户校验未通过' }
+		}
+
+		const { clientLanguage } = sendDeleteUserEmailAuthenticatorVerificationCodeRequest
+
+		const nowTime = new Date().getTime()
+		const todayStart = new Date()
+		todayStart.setHours(0, 0, 0, 0)
+
+		// 启动事务
+		const session = await createAndStartSession()
+
+		const { collectionName: userAuthCollectionName, schemaInstance: userAuthSchemaInstance } = UserAuthSchema
+
+		type UserAuth = InferSchemaType<typeof userAuthSchemaInstance>
+
+		const sendDeleteUserEmailAuthenticatorUserAuthWhere: QueryType<UserAuth> = { UUID: uuid }
+		const sendDeleteUserEmailAuthenticatorUserAuthSelect: SelectType<UserAuth> = {
+			authenticatorType: 1,
+			email: 1,
+		}
+		const userAuthResult = await selectDataFromMongoDB<UserAuth>(sendDeleteUserEmailAuthenticatorUserAuthWhere, sendDeleteUserEmailAuthenticatorUserAuthSelect, userAuthSchemaInstance, userAuthCollectionName, { session })
+		const userAuthData = userAuthResult.result?.[0]
+		const { authenticatorType, email } = userAuthData
+
+		if (!userAuthResult.success || userAuthResult.result?.length !== 1 || !email) {
+			await abortAndEndSession(session)
+			console.error('请求发送身份验证器的邮箱验证码失败，用户不存在')
+			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，用户不存在' }
+		}
+
+		if (authenticatorType !== 'email') {
+			await abortAndEndSession(session)
+			console.error('请求发送身份验证器的邮箱验证码失败，用户未开启 2FA 或者 2FA 方式不是 Email。')
+			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，用户未开启 2FA 或者 2FA 方式不是 Email。' }
+		}
+
+		const { collectionName: userEmailAuthenticatorVerificationCodeCollectionName, schemaInstance: userEmailAuthenticatorVerificationCodeSchemaInstance } = UserEmailAuthenticatorVerificationCodeSchema
+		type UserEmailAuthenticatorVerificationCode = InferSchemaType<typeof userEmailAuthenticatorVerificationCodeSchemaInstance>
+		const requestSendEmailAuthenticatorByEmailVerificationCodeWhere: QueryType<UserEmailAuthenticatorVerificationCode> = {
+			UUID: uuid,
+		}
+
+		const requestSendEmailAuthenticatorByEmailVerificationCodeSelect: SelectType<UserEmailAuthenticatorVerificationCode> = {
+			emailLowerCase: 1, // 用户邮箱
+			attemptsTimes: 1, // 验证码请求次数
+			lastRequestDateTime: 1, // 用户上一次请求验证码的时间，用于防止滥用
+		}
+
+		const requestSendEmailAuthenticatorByEmailVerificationCodeResult = await selectDataFromMongoDB<UserEmailAuthenticatorVerificationCode>(requestSendEmailAuthenticatorByEmailVerificationCodeWhere, requestSendEmailAuthenticatorByEmailVerificationCodeSelect, userEmailAuthenticatorVerificationCodeSchemaInstance, userEmailAuthenticatorVerificationCodeCollectionName, { session })
+
+		if (!requestSendEmailAuthenticatorByEmailVerificationCodeResult.success) {
+			if (session.inTransaction()) {
+				await session.abortTransaction()
+			}
+			session.endSession()
+			console.error('ERROR', '请求发送身份验证器的邮箱验证码失败，获取验证码失败')
+			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，获取验证码失败' }
+		}
+
+		const lastRequestDateTime = requestSendEmailAuthenticatorByEmailVerificationCodeResult.result?.[0]?.lastRequestDateTime ?? 0
+		if (requestSendEmailAuthenticatorByEmailVerificationCodeResult.result.length >= 1 && lastRequestDateTime + 55000 > nowTime) { // 是否仍在冷却，前端 60 秒，后端 55 秒
+			if (session.inTransaction()) {
+				await session.abortTransaction()
+			}
+			session.endSession()
+			console.warn('WARN', 'WARNING', '请求发送身份验证器的邮箱验证码失败，未超过邮件超时时间，请稍后再试')
+			return { success: true, isCoolingDown: true, message: '请求发送身份验证器的邮箱验证码失败，未超过邮件超时时间，请稍后再试' }
+		}
+
+		const attemptsTimes = requestSendEmailAuthenticatorByEmailVerificationCodeResult.result?.[0]?.attemptsTimes ?? 0
+		const lastRequestDate = new Date(lastRequestDateTime)
+		if (requestSendEmailAuthenticatorByEmailVerificationCodeResult.result.length >= 1 && todayStart < lastRequestDate && attemptsTimes > 5) { // ! 每天五次机会
+			if (session.inTransaction()) {
+				await session.abortTransaction()
+			}
+			session.endSession()
+			console.warn('WARN', 'WARNING', '请求发送身份验证器的邮箱验证码失败，已达本日重复次数上限，请稍后再试')
+			return { success: true, isCoolingDown: true, message: '请求发送身份验证器的邮箱验证码失败，已达本日重复次数上限，请稍后再试' }
+		}
+
+		const verificationCode = generateSecureVerificationNumberCode(6) // 生成六位随机数验证码
+		let newAttemptsTimes = attemptsTimes + 1
+		if (todayStart > lastRequestDate) {
+			newAttemptsTimes = 0
+		}
+
+		const requestSeDeleteTotpAuthenticatorVerificationCodeUpdate: UpdateType<UserEmailAuthenticatorVerificationCode> = {
+			verificationCode,
+			overtimeAt: nowTime + 1800000, // 当前时间加上 1800000 毫秒（30 分钟）作为新的过期时间
+			attemptsTimes: newAttemptsTimes,
+			lastRequestDateTime: nowTime,
+			editDateTime: nowTime,
+		}
+
+		const updateResult = await findOneAndUpdateData4MongoDB(requestSendEmailAuthenticatorByEmailVerificationCodeWhere, requestSeDeleteTotpAuthenticatorVerificationCodeUpdate, userEmailAuthenticatorVerificationCodeSchemaInstance, userEmailAuthenticatorVerificationCodeCollectionName, { session })
+
+		if (!updateResult.success) {
+			if (session.inTransaction()) {
+				await session.abortTransaction()
+			}
+			session.endSession()
+			console.error('ERROR', '请求发送身份验证器的邮箱验证码失败，更新或新增用户验证码失败')
+			return { success: false, isCoolingDown: false, message: '请求发送身份验证器的邮箱验证码失败，更新或新增用户验证码失败' }
+		}
+
+		// TODO: 使用多语言 email title and text
+		try {
+			const mailTitleCHS = 'KIRAKIRA - 删除 2FA 的验证码'
+			const mailTitleEN = 'KIRAKIRA - Verification Code For Delete 2FA'
+			const correctMailTitle = clientLanguage === 'zh-Hans-CN' ? mailTitleCHS : mailTitleEN
+
+			// 请不要使用 “您”
+			const mailHtmlCHS = `
+					<p>删除 2FA 的验证码是：<strong>${verificationCode}</strong></p>
+					注意：你可以使用这个验证码来删除你的 2FA（二重身份验证器）。
+					<br>
+					验证码 30 分钟内有效。请注意安全，不要向他人泄露你的验证码。
+				`
+			const mailHtmlEN = `
+					<p>Your verification code for delete Authenticator is: <strong>${verificationCode}</strong></p>
+					Note: Please make sure you will use this verification code to delete your Authenticator.
+					<br>
+					Verification code is valid for 30 minutes. Please ensure do not disclose your verification code to others.
+					<br>
+					<br>
+					To stop receiving notifications, please contact the KIRAKIRA support team.
+				`
+			const correctMailHTML = clientLanguage === 'zh-Hans-CN' ? mailHtmlCHS : mailHtmlEN
+
+			const sendMailResult = await sendMail(email, correctMailTitle, { html: correctMailHTML })
+			if (!sendMailResult.success) {
+				if (session.inTransaction()) {
+					await session.abortTransaction()
+				}
+				session.endSession()
+				console.error('ERROR', '请求发送验证身份验证器的邮箱验证码失败，邮件发送失败')
+				return { success: false, isCoolingDown: true, message: '请求发送验证身份验证器的邮箱验证码失败，邮件发送失败' }
+			}
+
+			await session.commitTransaction()
+			session.endSession()
+			return { success: true, isCoolingDown: false, message: '验证身份验证器的邮箱验证码已发送至你注册时使用的邮箱，请注意查收，如未收到，请检查垃圾箱或联系 KIRAKIRA 客服。' }
 		} catch (error) {
 			if (session.inTransaction()) {
 				await session.abortTransaction()
@@ -4123,6 +4294,16 @@ const checkDeleteTotpAuthenticatorByTotpVerificationCodeRequest = (deleteTotpAut
  */
 const checkSendUserEmailAuthenticatorVerificationCodeRequest = (sendUserEmailAuthenticatorVerificationCodeRequest: SendUserEmailAuthenticatorVerificationCodeRequestDto): boolean => {
 	return (!!sendUserEmailAuthenticatorVerificationCodeRequest.email && !!sendUserEmailAuthenticatorVerificationCodeRequest.passwordHash)
+}
+
+/**
+ * 检查用户发送删除 Email 身份验证器验证邮件的请求载荷
+ * @param sendDeleteTotpAuthenticatorByEmailVerificationCodeRequest 用户发送删除 Email 身份验证器验证邮件的请求载荷
+ * @returns 检查结果，合法返回 true，不合法返回 false
+ */
+const checkSendDeleteUserEmailAuthenticatorVerificationCodeRequest = (sendDeleteUserEmailAuthenticatorVerificationCodeRequest: SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto): boolean => {
+	// TODO: 该请求接口允许为空
+	return true
 }
 
 /**

@@ -36,6 +36,7 @@ import {
 	sendUserEmailAuthenticatorService,
 	checkEmailAuthenticatorVerificationCodeService,
 	deleteUserEmailAuthenticatorService,
+	sendDeleteUserEmailAuthenticatorService,
 } from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
 import {
@@ -57,6 +58,7 @@ import {
 	RequestSendChangeEmailVerificationCodeRequestDto,
 	RequestSendChangePasswordVerificationCodeRequestDto,
 	RequestSendVerificationCodeRequestDto,
+	SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto,
 	SendUserEmailAuthenticatorVerificationCodeRequestDto,
 	UpdateOrCreateUserInfoRequestDto,
 	UpdateOrCreateUserSettingsRequestDto,
@@ -212,9 +214,25 @@ export const sendUserEmailAuthenticatorController = async (ctx: koaCtx, next: ko
 		clientLanguage: data?.clientLanguage,
 	}
 
+	ctx.body = await sendUserEmailAuthenticatorService(sendUserEmailAuthenticatorVerificationCodeRequest)
+	await next()
+}
+
+/**
+ * 请求发送验证码，用于删除 Email 2FA
+ * @param ctx context
+ * @param next context
+ */
+export const sendDeleteUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<SendUserEmailAuthenticatorVerificationCodeRequestDto>
+
+	const sendDeleteUserEmailAuthenticatorVerificationCodeRequest: SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto = {
+		clientLanguage: data?.clientLanguage,
+	}
+
 	const uuid = ctx.cookies.get('uuid')
 	const token = ctx.cookies.get('token')
-	ctx.body = await sendUserEmailAuthenticatorService(sendUserEmailAuthenticatorVerificationCodeRequest)
+	ctx.body = await sendDeleteUserEmailAuthenticatorService(sendDeleteUserEmailAuthenticatorVerificationCodeRequest, uuid, token)
 	await next()
 }
 

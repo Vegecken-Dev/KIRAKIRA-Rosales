@@ -39,6 +39,7 @@ import {
 	createUserEmailAuthenticatorController,
 	sendUserEmailAuthenticatorController,
 	deleteUserEmailAuthenticatorController,
+	sendDeleteUserEmailAuthenticatorController,
 } from '../controller/UserController.js'
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
 import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
@@ -105,6 +106,13 @@ router.post('/user/sendUserEmailAuthenticator', sendUserEmailAuthenticatorContro
 //   "clientLanguage": "zh-Hans-CN",
 // }
 
+router.post('/user/sendDeleteUserEmailAuthenticator', sendDeleteUserEmailAuthenticatorController) // 用户发送删除 Email 身份验证器验证码
+// https://localhost:9999/user/sendDeleteUserEmailAuthenticator
+// cookie: uuid, token
+// {
+//   "clientLanguage": "zh-Hans-CN",
+// }
+
 router.delete('/user/deleteUserEmailAuthenticator', deleteUserEmailAuthenticatorController) // 用户删除 Email 2FA
 // https://localhost:9999/user/deleteUserEmailAuthenticator
 // cookie: uuid, token
@@ -112,13 +120,6 @@ router.delete('/user/deleteUserEmailAuthenticator', deleteUserEmailAuthenticator
 // 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXX",
 // 	 "verificationCode": "YYYYYY"
 // }
-
-// DELETE ME ↓↓↓↓↓↓↓↓↓↓
-// router.post('/user/checkEmailAuthenticatorVerificationCode', checkEmailAuthenticatorVerificationCodeController) // 检查 Email 身份验证器验证码是否正确
-// // {
-// // 	 "email": "aaa@aaa.aaa",
-// // 	 "verificationCode": "XXXXXX"
-// // }
 
 router.get('/user/checkUserHave2FAByEmail', checkUserHave2FAByEmailController) // 通过 Email 检查用户是否已开启 2FA 身份验证器
 // https://localhost:9999/user/checkUserHave2FAByEmail?email=xxxxxxx

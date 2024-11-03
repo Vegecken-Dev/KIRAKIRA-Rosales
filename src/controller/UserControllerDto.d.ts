@@ -856,6 +856,19 @@ export type SendUserEmailAuthenticatorVerificationCodeResponseDto = {
 }
 
 /**
+ * 用户发送删除 Email 身份验证器验证邮件的请求载荷
+ */
+export type SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto = {
+	/** 用户客户端使用的语言 */
+	clientLanguage: string;
+}
+
+/**
+ * 用户发送删除 Email 身份验证器验证邮件的请求响应
+ */
+export type SendDeleteUserEmailAuthenticatorVerificationCodeResponseDto = {} & SendUserEmailAuthenticatorVerificationCodeResponseDto
+
+/**
  * 验证 Email 身份验证器的验证码是否正确的请求载荷
  */
 export type CheckEmailAuthenticatorVerificationCodeRequestDto = {

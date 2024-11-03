@@ -1,4 +1,19 @@
-import { ClientSession } from "mongoose"
+import mongoose, { ClientSession } from "mongoose"
+
+/**
+ * 创建并启动事务
+ * @returns 一个已经启动的事务
+ * @throws error 创建或启动事务失败
+ */
+export const createAndStartSession = async (): Promise<ClientSession> => {
+	try {
+		const session = await mongoose.startSession()
+		session.startTransaction()
+		return session
+	} catch (error) {
+		throw new Error('启动 MongoDB Session 失败', error)
+	}
+}
 
 /**
  * 回滚并结束事务
