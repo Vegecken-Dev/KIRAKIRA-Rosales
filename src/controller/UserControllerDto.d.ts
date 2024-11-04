@@ -239,6 +239,8 @@ export type GetSelfUserInfoResponseDto = {
 			userCreateDateTime?: number;
 			/** 用户的角色 */
 			role?: string;
+			/** 2FA 的类型 */
+			typeOf2FA?: string;
 		}
 		& UpdateOrCreateUserInfoRequestDto
 	);
@@ -911,7 +913,7 @@ export type DeleteUserEmailAuthenticatorResponseDto = {
 /**
  * 检查 2FA 是否开启的请求载荷
  */
-export type CheckUserHave2FAServiceRequestDto = {
+export type CheckUserHave2FARequestDto = {
 	/** 用户的邮箱 */
 	email: string;
 }
@@ -919,7 +921,7 @@ export type CheckUserHave2FAServiceRequestDto = {
 /**
  * 检查 2FA 是否开启的请求响应
  */
-export type CheckUserHave2FAServiceResponseDto = {
+export type CheckUserHave2FAResponseDto = {
 	/** 执行结果 */
 	success: boolean;
 	/** 是否存在身份验证器 */

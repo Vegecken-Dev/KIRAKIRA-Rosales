@@ -24,7 +24,7 @@ import {
 	GetMyInvitationCodeResponseDto,
 	GetSelfUserInfoRequestDto,
 	GetSelfUserInfoResponseDto,
-	CheckUserHave2FAServiceResponseDto,
+	CheckUserHave2FAResponseDto,
 	GetUserAvatarUploadSignedUrlResponseDto,
 	GetUserInfoByUidRequestDto,
 	GetUserInfoByUidResponseDto,
@@ -60,7 +60,7 @@ import {
 	DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto,
 	ConfirmUserTotpAuthenticatorRequestDto,
 	ConfirmUserTotpAuthenticatorResponseDto,
-	CheckUserHave2FAServiceRequestDto,
+	CheckUserHave2FARequestDto,
 	CreateUserEmailAuthenticatorResponseDto,
 	SendUserEmailAuthenticatorVerificationCodeRequestDto,
 	SendUserEmailAuthenticatorVerificationCodeResponseDto,
@@ -784,6 +784,7 @@ export const getSelfUserInfoService = async (getSelfUserInfoRequest: GetSelfUser
 					role: 1, // 用户的角色
 					uid: 1, // 用户 UID
 					UUID: 1, // UUID
+					authenticatorType: 1, // 2FA 的类型
 				}
 
 				const { collectionName: userInfoCollectionName, schemaInstance: userInfoSchemaInstance } = UserInfoSchema
@@ -809,9 +810,9 @@ export const getSelfUserInfoService = async (getSelfUserInfoRequest: GetSelfUser
 						const userAuth = userAuthResult?.result
 						const userInfo = userInfoResult?.result
 						if (userAuth?.length === 0 || userInfo?.length === 0) {
-							return { success: true, message: '用户未填写用户信息', result: { uid, email: userAuth?.[0]?.email, userCreateDateTime: userAuth[0].userCreateDateTime, role: userAuth[0].role } }
+							return { success: true, message: '用户未填写用户信息', result: { uid, email: userAuth?.[0]?.email, userCreateDateTime: userAuth[0].userCreateDateTime, role: userAuth[0].role, typeOf2FA: userAuth[0].authenticatorType } }
 						} else if (userAuth?.length === 1 && userAuth?.[0] && userInfo?.length === 1 && userInfo?.[0]) {
-							return { success: true, message: '获取用户信息成功', result: { ...userInfo[0], email: userAuth[0].email, userCreateDateTime: userAuth[0].userCreateDateTime, role: userAuth[0].role } }
+							return { success: true, message: '获取用户信息成功', result: { ...userInfo[0], email: userAuth[0].email, userCreateDateTime: userAuth[0].userCreateDateTime, role: userAuth[0].role, typeOf2FA: userAuth[0].authenticatorType } }
 						} else {
 							console.error('ERROR', '获取用户信息时失败，获取到的结果长度不为 1')
 							return { success: false, message: '获取用户信息时失败，结果异常' }
@@ -3930,12 +3931,12 @@ export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAuthent
 
 /**
  * 通过 Email 检查用户是否已开启 2FA 身份验证器
- * @param checkUserHave2FAServiceRequestDto 通过 Email 检查用户是否已开启 2FA 身份验证器的请求载荷
+ * @param checkUserHave2FARequestDto 通过 Email 检查用户是否已开启 2FA 身份验证器的请求载荷
  * @returns 通过 Email 检查用户是否已开启 2FA 身份验证器的请求响应
  */
-export const checkUserHave2FAByEmailService = async (checkUserHave2FAServiceRequestDto: CheckUserHave2FAServiceRequestDto): Promise<CheckUserHave2FAServiceResponseDto> => {
+export const checkUserHave2FAByEmailService = async (checkUserHave2FARequestDto: CheckUserHave2FARequestDto): Promise<CheckUserHave2FAResponseDto> => {
 	try {
-		const { email } = checkUserHave2FAServiceRequestDto
+		const { email } = checkUserHave2FARequestDto
 		if (!email) {
 			console.error('ERROR', `通过 Email 检查用户是否已开启 2FA 身份验证器失败，邮箱为空`)
 			return { success: false, have2FA: false, message: '通过 Email 检查用户是否已开启 2FA 身份验证器失败，邮箱为空' }
@@ -3990,7 +3991,7 @@ export const checkUserHave2FAByEmailService = async (checkUserHave2FAServiceRequ
  * @param token 用户的 token
  * @returns 通过 UUID 检查用户是否已开启 2FA 身份验证器的请求响应
  */
-export const checkUserHave2FAByUUIDService = async (uuid: string, token: string): Promise<CheckUserHave2FAServiceResponseDto> => {
+export const checkUserHave2FAByUUIDService = async (uuid: string, token: string): Promise<CheckUserHave2FAResponseDto> => {
 	try {
 		if (!await checkUserTokenByUUID(uuid, token)) {
 			console.error('ERROR', `通过 UUID 检查用户是否已开启 2FA 身份验证器失败，非法用户`)

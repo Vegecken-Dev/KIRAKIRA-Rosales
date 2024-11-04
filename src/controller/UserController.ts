@@ -44,9 +44,8 @@ import {
 	AdminGetUserInfoRequestDto,
 	ApproveUserInfoRequestDto,
 	BlockUserByUIDRequestDto,
-	CheckEmailAuthenticatorVerificationCodeRequestDto,
 	CheckInvitationCodeRequestDto,
-	CheckUserHave2FAServiceRequestDto,
+	CheckUserHave2FARequestDto,
 	CheckUsernameRequestDto,
 	ConfirmUserTotpAuthenticatorRequestDto,
 	DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto,
@@ -253,23 +252,6 @@ export const deleteUserEmailAuthenticatorController = async (ctx: koaCtx, next: 
 	await next()
 }
 
-// /**
-//  * 验证 Email 身份验证器的验证码是否正确
-//  * @param ctx context
-//  * @param next context
-//  */
-// export const checkEmailAuthenticatorVerificationCodeController = async (ctx: koaCtx, next: koaNext) => {
-// 	const data = ctx.request.body as Partial<CheckEmailAuthenticatorVerificationCodeRequestDto>
-
-// 	const checkSendVerificationCodeRequest: CheckEmailAuthenticatorVerificationCodeRequestDto = {
-// 		email: data.email || '',
-// 		verificationCode: data.verificationCode,
-// 	}
-
-// 	ctx.body = await checkEmailAuthenticatorVerificationCodeService(checkSendVerificationCodeRequest)
-// 	await next()
-// }
-
 /**
  * 通过 Email 检查用户是否已开启 2FA 身份验证器
  * @param ctx context
@@ -278,10 +260,10 @@ export const deleteUserEmailAuthenticatorController = async (ctx: koaCtx, next: 
  */
 export const checkUserHave2FAByEmailController = async (ctx: koaCtx, next: koaNext) => {
 	const email = ctx.query.email as string
-	const checkUserHave2FAServiceRequestDto: CheckUserHave2FAServiceRequestDto = {
+	const checkUserHave2FARequest: CheckUserHave2FARequestDto = {
 		email,
 	}
-	const result = await checkUserHave2FAByEmailService(checkUserHave2FAServiceRequestDto);
+	const result = await checkUserHave2FAByEmailService(checkUserHave2FARequest);
 	ctx.body = result;
 	await next()
 }
