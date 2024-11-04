@@ -1,7 +1,73 @@
 import { getCorrectCookieDomain } from '../common/UrlTool.js'
-import { adminClearUserInfoService, adminGetUserInfoService, approveUserInfoService, blockUserByUIDService, changePasswordService, checkInvitationCodeService, checkUsernameService, checkUserTokenService, createInvitationCodeService, getBlockedUserService, getMyInvitationCodeService, getSelfUserInfoService, getUserAvatarUploadSignedUrlService, getUserInfoByUidService, getUserSettingsService, reactivateUserByUIDService, requestSendChangeEmailVerificationCodeService, requestSendChangePasswordVerificationCodeService, RequestSendVerificationCodeService, updateOrCreateUserInfoService, updateOrCreateUserSettingsService, updateUserEmailService, userExistsCheckService, userLoginService, userRegistrationService, getUserInvitationCodeService, getUserUuid } from '../service/UserService.js'
+import {
+	adminClearUserInfoService,
+	adminGetUserInfoService,
+	approveUserInfoService,
+	blockUserByUIDService,
+	changePasswordService,
+	checkInvitationCodeService,
+	checkUsernameService,
+	checkUserTokenService,
+	createInvitationCodeService,
+	getBlockedUserService,
+	getMyInvitationCodeService,
+	getSelfUserInfoService,
+	getUserAvatarUploadSignedUrlService,
+	getUserInfoByUidService,
+	getUserSettingsService,
+	reactivateUserByUIDService,
+	requestSendChangeEmailVerificationCodeService,
+	requestSendChangePasswordVerificationCodeService,
+	RequestSendVerificationCodeService,
+	updateOrCreateUserInfoService,
+	updateOrCreateUserSettingsService,
+	updateUserEmailService,
+	userExistsCheckService,
+	userLoginService,
+	userRegistrationService,
+	getUserInvitationCodeService,
+	getUserUuid,
+	createUserTotpAuthenticatorService,
+	confirmUserTotpAuthenticatorService,
+	deleteTotpAuthenticatorByTotpVerificationCodeService,
+	checkUserHave2FAByEmailService,
+	checkUserHave2FAByUUIDService,
+	createUserEmailAuthenticatorService,
+	sendUserEmailAuthenticatorService,
+	checkEmailAuthenticatorVerificationCodeService,
+	deleteUserEmailAuthenticatorService,
+	sendDeleteUserEmailAuthenticatorService,
+} from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
-import { AdminClearUserInfoRequestDto, AdminGetUserInfoRequestDto, ApproveUserInfoRequestDto, BlockUserByUIDRequestDto, CheckInvitationCodeRequestDto, CheckUsernameRequestDto, GetSelfUserInfoRequestDto, GetUserInfoByUidRequestDto, GetUserSettingsRequestDto, ReactivateUserByUIDRequestDto, RequestSendChangeEmailVerificationCodeRequestDto, RequestSendChangePasswordVerificationCodeRequestDto, RequestSendVerificationCodeRequestDto, UpdateOrCreateUserInfoRequestDto, UpdateOrCreateUserSettingsRequestDto, UpdateUserEmailRequestDto, UpdateUserPasswordRequestDto, UserExistsCheckRequestDto, UserLoginRequestDto, UserLogoutResponseDto, UserRegistrationRequestDto } from './UserControllerDto.js'
+import {
+	AdminClearUserInfoRequestDto,
+	AdminGetUserInfoRequestDto,
+	ApproveUserInfoRequestDto,
+	BlockUserByUIDRequestDto,
+	CheckInvitationCodeRequestDto,
+	CheckUserHave2FARequestDto,
+	CheckUsernameRequestDto,
+	ConfirmUserTotpAuthenticatorRequestDto,
+	DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto,
+	DeleteUserEmailAuthenticatorRequestDto,
+	GetSelfUserInfoRequestDto,
+	GetUserInfoByUidRequestDto,
+	GetUserSettingsRequestDto,
+	ReactivateUserByUIDRequestDto,
+	RequestSendChangeEmailVerificationCodeRequestDto,
+	RequestSendChangePasswordVerificationCodeRequestDto,
+	RequestSendVerificationCodeRequestDto,
+	SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto,
+	SendUserEmailAuthenticatorVerificationCodeRequestDto,
+	UpdateOrCreateUserInfoRequestDto,
+	UpdateOrCreateUserSettingsRequestDto,
+	UpdateUserEmailRequestDto,
+	UpdateUserPasswordRequestDto,
+	UserExistsCheckRequestDto,
+	UserLoginRequestDto,
+	UserLogoutResponseDto,
+	UserRegistrationRequestDto
+} from './UserControllerDto.js'
 
 /**
  * 用户注册
@@ -45,11 +111,13 @@ export const userRegistrationController = async (ctx: koaCtx, next: koaNext) => 
  */
 export const userLoginController = async (ctx: koaCtx, next: koaNext) => {
 	const data = ctx.request.body as Partial<UserLoginRequestDto>
-	const userRegistrationData: UserLoginRequestDto = {
+	const userLoginRequest: UserLoginRequestDto = {
 		email: data?.email,
 		passwordHash: data?.passwordHash,
+		clientOtp: data?.clientOtp,
+		verificationCode: data?.verificationCode
 	}
-	const userLoginResult = await userLoginService(userRegistrationData)
+	const userLoginResult = await userLoginService(userLoginRequest)
 
 	const cookieOption = {
 		httpOnly: true, // 仅 HTTP 访问，浏览器中的 js 无法访问。
@@ -63,6 +131,154 @@ export const userLoginController = async (ctx: koaCtx, next: koaNext) => {
 	ctx.cookies.set('uid', `${userLoginResult.uid}`, cookieOption)
 	ctx.cookies.set('uuid', `${userLoginResult.UUID}`, cookieOption)
 	ctx.body = userLoginResult
+	await next()
+}
+
+/**
+ * 用户创建 TOTP 身份验证器
+ * @param ctx context
+ * @param next context
+ * @return CreateUserTotpAuthenticatorResponseDto 创建结果
+ */
+export const createUserTotpAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	const result = await createUserTotpAuthenticatorService(uuid, token)
+	ctx.body = result
+	await next()
+}
+
+/**
+ * 用户确认绑定 TOTP 设备
+ * @param ctx context
+ * @param next context
+ * @returns 用户确认绑定 TOTP 设备的请求响应
+ */
+export const confirmUserTotpAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<ConfirmUserTotpAuthenticatorRequestDto>
+	const confirmUserTotpAuthenticatorRequest: ConfirmUserTotpAuthenticatorRequestDto = {
+		clientOtp: data.clientOtp || '',
+		otpAuth: data.otpAuth || '',
+	}
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	const result = await confirmUserTotpAuthenticatorService(confirmUserTotpAuthenticatorRequest, uuid, token)
+	ctx.body = result
+	await next()
+}
+
+/**
+ * 已登录用户通过密码和 TOTP 验证码删除身份验证器
+ * @param ctx context
+ * @param next context
+ * @returns 已登录用户通过密码和 TOTP 验证码删除身份验证器的请求响应
+ */
+export const deleteTotpAuthenticatorByTotpVerificationCodeController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto>
+	const deleteTotpAuthenticatorByTotpVerificationCodeRequest: DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto = {
+		clientOtp: data.clientOtp || '',
+		passwordHash: data.passwordHash || '',
+	}
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	ctx.body = await deleteTotpAuthenticatorByTotpVerificationCodeService(deleteTotpAuthenticatorByTotpVerificationCodeRequest, uuid, token)
+	await next()
+}
+
+/**
+ * 用户创建 Email 身份验证器
+ * @param ctx context
+ * @param next context
+ * @returns CreateUserEmailAuthenticatorResponseDto 创建结果
+ */
+export const createUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	const result = await createUserEmailAuthenticatorService(uuid, token)
+	ctx.body = result
+	await next()
+}
+
+/**
+ * 请求发送验证码，用于登录时验证身份验证器
+ * @param ctx context
+ * @param next context
+ */
+export const sendUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<SendUserEmailAuthenticatorVerificationCodeRequestDto>
+
+	const sendUserEmailAuthenticatorVerificationCodeRequest: SendUserEmailAuthenticatorVerificationCodeRequestDto = {
+		email: data?.email || '',
+		passwordHash: data?.passwordHash || '',
+		clientLanguage: data?.clientLanguage,
+	}
+
+	ctx.body = await sendUserEmailAuthenticatorService(sendUserEmailAuthenticatorVerificationCodeRequest)
+	await next()
+}
+
+/**
+ * 请求发送验证码，用于删除 Email 2FA
+ * @param ctx context
+ * @param next context
+ */
+export const sendDeleteUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<SendUserEmailAuthenticatorVerificationCodeRequestDto>
+
+	const sendDeleteUserEmailAuthenticatorVerificationCodeRequest: SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto = {
+		clientLanguage: data?.clientLanguage,
+	}
+
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	ctx.body = await sendDeleteUserEmailAuthenticatorService(sendDeleteUserEmailAuthenticatorVerificationCodeRequest, uuid, token)
+	await next()
+}
+
+/**
+ * 用户删除 Email 2FA
+ * @param ctx context
+ * @param next context
+ */
+export const deleteUserEmailAuthenticatorController = async (ctx: koaCtx, next: koaNext) => {
+	const data = ctx.request.body as Partial<DeleteUserEmailAuthenticatorRequestDto>
+	const deleteUserEmailAuthenticatorRequest: DeleteUserEmailAuthenticatorRequestDto = {
+		passwordHash: data.passwordHash || '',
+		verificationCode: data.verificationCode || '',
+	}
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	ctx.body = await deleteUserEmailAuthenticatorService(deleteUserEmailAuthenticatorRequest, uuid, token)
+	await next()
+}
+
+/**
+ * 通过 Email 检查用户是否已开启 2FA 身份验证器
+ * @param ctx context
+ * @param next next
+ * @returns GetUserAuthenticatorResponseDto 检查结果
+ */
+export const checkUserHave2FAByEmailController = async (ctx: koaCtx, next: koaNext) => {
+	const email = ctx.query.email as string
+	const checkUserHave2FARequest: CheckUserHave2FARequestDto = {
+		email,
+	}
+	const result = await checkUserHave2FAByEmailService(checkUserHave2FARequest);
+	ctx.body = result;
+	await next()
+}
+
+/**
+ * 通过 UUID 检查用户是否已开启 2FA 身份验证器
+ * @param ctx context
+ * @param next next
+ * @returns GetUserAuthenticatorResponseDto 检查结果
+ */
+export const checkUserHave2FAByUUIDController = async (ctx: koaCtx, next: koaNext) => {
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	const result = await checkUserHave2FAByUUIDService(uuid, token);
+	ctx.body = result;
 	await next()
 }
 
@@ -371,7 +587,6 @@ export const checkInvitationCodeController = async (ctx: koaCtx, next: koaNext) 
 	ctx.body = await checkInvitationCodeService(checkInvitationCodeRequestDto)
 	await next()
 }
-
 
 /**
  * 请求发送验证码，用于修改邮箱

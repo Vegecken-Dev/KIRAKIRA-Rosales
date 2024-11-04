@@ -3,7 +3,44 @@ import { createOrUpdateUserBrowsingHistoryController, getUserBrowsingHistoryWith
 import { emitDanmakuController, getDanmakuListByKvidController } from '../controller/DanmakuController.js'
 import { createFavoritesController, getFavoritesController } from '../controller/FavoritesController.js'
 import { helloWorld } from '../controller/HelloWorld.js'
-import { adminClearUserInfoController, adminGetUserInfoController, approveUserInfoController, blockUserByUIDController, checkInvitationCodeController, checkUsernameController, checkUserTokenController, createInvitationCodeController, getBlockedUserController, getMyInvitationCodeController, getSelfUserInfoController, getUserAvatarUploadSignedUrlController, getUserInfoByUidController, getUserSettingsController, reactivateUserByUIDController, requestSendChangeEmailVerificationCodeController, requestSendChangePasswordVerificationCodeController, requestSendVerificationCodeController, updateOrCreateUserInfoController, updateOrCreateUserSettingsController, updateUserEmailController, updateUserPasswordController, userExistsCheckController, userLoginController, userLogoutController, userRegistrationController, getUserInvitationCodeController } from '../controller/UserController.js'
+import {
+	adminClearUserInfoController,
+	adminGetUserInfoController,
+	approveUserInfoController,
+	blockUserByUIDController,
+	checkInvitationCodeController,
+	checkUsernameController,
+	checkUserTokenController,
+	createInvitationCodeController,
+	getBlockedUserController,
+	getMyInvitationCodeController,
+	getSelfUserInfoController,
+	getUserAvatarUploadSignedUrlController,
+	getUserInfoByUidController,
+	getUserSettingsController,
+	reactivateUserByUIDController,
+	requestSendChangeEmailVerificationCodeController,
+	requestSendChangePasswordVerificationCodeController,
+	requestSendVerificationCodeController,
+	updateOrCreateUserInfoController,
+	updateOrCreateUserSettingsController,
+	updateUserEmailController,
+	updateUserPasswordController,
+	userExistsCheckController,
+	userLoginController,
+	userLogoutController,
+	userRegistrationController,
+	getUserInvitationCodeController,
+	createUserTotpAuthenticatorController,
+	checkUserHave2FAByEmailController,
+	deleteTotpAuthenticatorByTotpVerificationCodeController,
+	confirmUserTotpAuthenticatorController,
+	checkUserHave2FAByUUIDController,
+	createUserEmailAuthenticatorController,
+	sendUserEmailAuthenticatorController,
+	deleteUserEmailAuthenticatorController,
+	sendDeleteUserEmailAuthenticatorController,
+} from '../controller/UserController.js'
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
 import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
 import { createVideoTagController, getVideoTagByTagIdController, searchVideoTagController } from '../controller/VideoTagController.js'
@@ -12,10 +49,8 @@ const router = new Router()
 
 // router-begin
 
-router.get('/', helloWorld) // 测试 // DELETE
-router.get('/02/koa/hello', helloWorld) // 测试 // DELETE
-// router.get('/02/koa/serverInfo', activeHeartBeatMongoDBShardInfo) // 返回 MongoDB 心跳数据库中存储的心跳数据的连接信息，前提是环境变量中已有心跳数据库连接信息 // DELETE
-// https://localhost:9999/02/koa/serverInfo
+router.get('/', helloWorld) // 测试 // DELETE ME
+router.get('/02/koa/hello', helloWorld) // 测试 // DELETE ME
 
 
 
@@ -37,7 +72,61 @@ router.post('/user/login', userLoginController) // 用户登录
 // {
 // 	"email": "aaa@aaa.aaa",
 // 	"passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+// 	"clientOtp": "XXXXXX" //非必须
+//  "verificationCode": "XXXXXX" //非必须
 // }
+
+router.post('/user/createTotpAuthenticator', createUserTotpAuthenticatorController) // 用户创建 TOTP 身份验证器
+// https://localhost:9999/user/createTotpAuthenticator
+// cookie: uuid, token
+
+router.post('/user/confirmUserTotpAuthenticator', confirmUserTotpAuthenticatorController) // 用户确认绑定 TOTP 设备
+// https://localhost:9999/user/confirmUserTotpAuthenticator
+// {
+// 	"clientOtp": "XXXXXX",
+// 	"otpAuth": "YYYYYYYYYYYYYYYYYYYYYYYYYY"
+// }
+
+router.delete('/user/deleteTotpAuthenticatorByTotpVerificationCodeController', deleteTotpAuthenticatorByTotpVerificationCodeController) // 已登录用户通过密码和 TOTP 验证码删除身份验证器
+// cookie: uuid, token
+// {
+// 	 "clientOtp": "XXXXXX",
+// 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+// }
+
+router.post('/user/createEmailAuthenticator', createUserEmailAuthenticatorController) // 用户创建 Email 身份验证器
+// https://localhost:9999/user/createEmailAuthenticator
+// cookie: uuid, token
+
+router.post('/user/sendUserEmailAuthenticator', sendUserEmailAuthenticatorController) // 用户发送 Email 身份验证器验证码
+// https://localhost:9999/user/sendUserEmailAuthenticator
+// {
+// 	 "email": "aaa@aaa.aaa",
+// 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+//   "clientLanguage": "zh-Hans-CN",
+// }
+
+router.post('/user/sendDeleteUserEmailAuthenticator', sendDeleteUserEmailAuthenticatorController) // 用户发送删除 Email 身份验证器验证码
+// https://localhost:9999/user/sendDeleteUserEmailAuthenticator
+// cookie: uuid, token
+// {
+//   "clientLanguage": "zh-Hans-CN",
+// }
+
+router.delete('/user/deleteUserEmailAuthenticator', deleteUserEmailAuthenticatorController) // 用户删除 Email 2FA
+// https://localhost:9999/user/deleteUserEmailAuthenticator
+// cookie: uuid, token
+// {
+// 	 "passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXX",
+// 	 "verificationCode": "YYYYYY"
+// }
+
+router.get('/user/checkUserHave2FAByEmail', checkUserHave2FAByEmailController) // 通过 Email 检查用户是否已开启 2FA 身份验证器
+// https://localhost:9999/user/checkUserHave2FAByEmail?email=xxxxxxx
+
+router.get('/user/checkUserHave2FAByUUID', checkUserHave2FAByUUIDController) // 通过 UUID 检查用户是否已开启 2FA 身份验证器
+// https://localhost:9999/user/checkUserHave2FAByUUID
+// cookie: uuid, token
 
 router.get('/user/existsCheck', userExistsCheckController) // 注册用户时检查用户是否存在
 // https://localhost:9999/user/existsCheck?email=xxxxxxx
@@ -289,9 +378,9 @@ router.post('/video/pending/approved', approvePendingReviewVideoController) // �
 
 router.post('/video/danmaku/emit', emitDanmakuController) // 发送弹幕的接口
 // https://localhost:9999/video/danmaku/emit
+// cookie: uid, token, uuid
 // {
 // 	"videoId": 10,
-// 	"uid": 2,
 // 	"time": 5,
 // 	"text": "这是一条测试弹幕",
 // 	"color": "#66CCFF",
