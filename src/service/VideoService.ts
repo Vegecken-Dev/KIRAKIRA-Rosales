@@ -41,7 +41,7 @@ export const updateVideoService = async (uploadVideoRequest: UploadVideoRequestD
 				return { success: false, message: '上传视频失败，用户已封禁' }
 			}
 
-			// DELETE ME: 该验证应当移除
+			// DELETE ME: 该验证应当被移除
 			if (!await checkUserRoleService(uid, 'admin')) {
 				console.error('ERROR', '上传视频失败，仅限管理员上传')
 				return { success: false, message: '上传视频失败，仅限管理员上传' }
@@ -480,7 +480,7 @@ export const getVideoFileTusEndpointService = async (uid: number, token: string,
 				return undefined
 			}
 
-			// DELETE ME: 改验证应当移除
+			// DELETE ME: 该验证应当被移除
 			if (!await checkUserRoleService(uid, 'admin')) {
 				console.error('ERROR', '无法创建 Cloudflare Stream TUS Endpoint, 仅限管理员上传')
 				return undefined
