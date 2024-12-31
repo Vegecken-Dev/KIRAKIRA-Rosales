@@ -22,7 +22,7 @@ export const createVideoTagService = async (createVideoTagRequest: CreateVideoTa
 					return { success: false, message: '创建视频 TAG 失败，用户已封禁' }
 				}
 
-				// DELETE ME: 改验证应当移除
+				// DELETE ME: 该验证应当被移除
 				if (!await checkUserRoleService(uid, 'admin')) {
 					console.error('ERROR', '创建视频 TAG 失败, 仅限管理员')
 					return { success: false, message: '创建视频 TAG 失败, 仅限管理员' }
