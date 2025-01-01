@@ -457,7 +457,10 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 						console.error('ERROR', '登录失败，更新备份码失败')
 						return { success: false, message: '登录失败，更新备份码失败', authenticatorType }
 					}
-
+					if (session.inTransaction()) {
+						await session.commitTransaction()
+					}
+					session.endSession()
 					return { success: true, email, uid, token, UUID: uuid, message: '用户使用备用码登录成功', authenticatorType }
 				} else {
 					return { success: true, email, uid, token, UUID: uuid, message: '用户使用 TOTP 验证码登录成功', authenticatorType }
