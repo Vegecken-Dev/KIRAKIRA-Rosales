@@ -375,7 +375,7 @@ class UserEmailAuthenticatorSchemaFactory {
 export const UserEmailAuthenticatorSchema = new UserEmailAuthenticatorSchemaFactory()
 
 /**
- * 用户确认绑定 Email 身份验证器的邮箱验证码
+ * 用户验证 Email 身份验证器的邮箱验证码
  */
 class UserEmailAuthenticatorVerificationCodeSchemaFactory {
 	/** MongoDB Schema */

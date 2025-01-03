@@ -458,6 +458,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 						return { success: false, message: '登录失败，更新备份码失败', authenticatorType }
 					}
 
+					await commitSession(session)
 					return { success: true, email, uid, token, UUID: uuid, message: '用户使用备用码登录成功', authenticatorType }
 				} else {
 					return { success: true, email, uid, token, UUID: uuid, message: '用户使用 TOTP 验证码登录成功', authenticatorType }
