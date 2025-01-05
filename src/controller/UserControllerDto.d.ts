@@ -749,9 +749,9 @@ export type AdminClearUserInfoResponseDto = {
  */
 export type DeleteTotpAuthenticatorByTotpVerificationCodeRequestDto = {
 	/** 用户的 TOTP 验证器中的验证码 */
-	clientOtp: string,
+	clientOtp: string;
 	/** 被哈希一次的密码 */
-	passwordHash: string,
+	passwordHash: string;
 }
 
 /**
@@ -780,7 +780,7 @@ export type CreateUserTotpAuthenticatorResponseDto = {
 	result?: {
 		/** TOTP 的唯一 ID，验证器的二维码 */
 		otpAuth?: string;
-	}
+	};
 	/** 附加的文本消息 */
 	message?: string;
 }
@@ -801,7 +801,7 @@ export type CreateUserEmailAuthenticatorResponseDto = {
 		email?: string;
 		/** Email Lower Case */
 		emailLowerCase?: string;
-	}
+	};
 	/** 附加的文本消息 */
 	message?: string;
 }
@@ -828,7 +828,7 @@ export type ConfirmUserTotpAuthenticatorResponseDto = {
 		backupCode?: string[];
 		/** 验证器恢复码 */
 		recoveryCode?: string;
-	}
+	};
 	/** 附加的文本消息 */
 	message?: string;
 }
@@ -930,6 +930,26 @@ export type CheckUserHave2FAResponseDto = {
 	type?: 'email' | 'totp';
 	/** 如果存在且结果为 totp，则返回 2FA 的创建时间 */
 	totpCreationDateTime?: number;
+	/** 附加的文本消息 */
+	message?: string;
+}
+
+/**
+ * 根据 UUID 校验用户是否已经存在的请求载荷
+ */
+export type CheckUserExistsByUuidRequestDto = {
+	/** 用户的 UUID */
+	uuid: string;
+}
+
+/**
+ * 根据 UUID 校验用户是否已经存在的请求响应
+ */
+export type CheckUserExistsByUuidResponseDto = {
+	/** 执行结果 */
+	success: boolean;
+	/** 用户是否已存在 */
+	exists: boolean;
 	/** 附加的文本消息 */
 	message?: string;
 }

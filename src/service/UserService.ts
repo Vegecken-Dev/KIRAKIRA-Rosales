@@ -70,6 +70,8 @@ import {
 	DeleteUserEmailAuthenticatorResponseDto,
 	SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto,
 	SendDeleteUserEmailAuthenticatorVerificationCodeResponseDto,
+	CheckUserExistsByUuidRequestDto,
+	CheckUserExistsByUuidResponseDto,
 } from '../controller/UserControllerDto.js'
 import { findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataFromMongoDB, updateData4MongoDB, selectDataByAggregateFromMongoDB, deleteDataFromMongoDB } from '../dbPool/DbClusterPool.js'
 import { DbPoolResultsType, QueryType, SelectType, UpdateType } from '../dbPool/DbClusterPoolTypes.js'
@@ -498,8 +500,8 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 }
 
 /**
- * 检查一个用户是否存在
- * @param checkUserExistsCheckRequest 检查用户是否存在需要的信息（用户名）
+ * 检查一个用户邮箱是否存在（检查一个邮箱是否已经注册）
+ * @param checkUserExistsCheckRequest 检查用户是否存在需要的信息（用户邮箱）
  * @return UserExistsCheckResponseDto 检查结果，如果存在或查询失败则 exists: true
  */
 export const userExistsCheckService = async (userExistsCheckRequest: UserExistsCheckRequestDto): Promise<UserExistsCheckResponseDto> => {
@@ -518,23 +520,26 @@ export const userExistsCheckService = async (userExistsCheckRequest: UserExistsC
 			try {
 				result = await selectDataFromMongoDB(where, select, schemaInstance, collectionName)
 			} catch (error) {
-				console.error('ERROR', '验证用户是否存在（查询用户）时出现异常：', error)
-				return { success: false, exists: true, message: '验证用户是否存在时出现异常' }
+				console.error('ERROR', '验证用户邮箱是否存在（查询用户）时出现异常：', error)
+				return { success: false, exists: false, message: '验证用户邮箱是否存在时出现异常' }
 			}
 
 			if (result && result.success && result.result) {
 				if (result.result?.length > 0) {
-					return { success: true, exists: true, message: '用户已存在' }
+					return { success: true, exists: true, message: '用户邮箱已存在' }
 				} else {
-					return { success: true, exists: false, message: '用户不存在' }
+					return { success: true, exists: false, message: '用户邮箱不存在' }
 				}
 			} else {
-				return { success: false, exists: true, message: '查询失败' }
+				return { success: false, exists: false, message: '邮箱查询失败' }
 			}
+		} else {
+			console.error('ERROR', '查询用户邮箱是否存在时失败：参数不合法')
+			return { success: false, exists: false, message: '查询用户邮箱是否存在时失败：参数不合法' }
 		}
 	} catch (error) {
-		console.error('ERROR', '查询用户是否存在时出错：', error)
-		return { success: false, exists: true, message: '验证用户是否存在时程序异常' }
+		console.error('ERROR', '查询用户邮箱是否存在时出错：未知错误', error)
+		return { success: false, exists: false, message: '查询用户邮箱是否存在时出错：未知错误' }
 	}
 }
 
@@ -913,7 +918,6 @@ export const getSelfUserInfoByUuidService = async (getSelfUserInfoByUuidRequest:
 		return { success: false, message: '通过 UUID 获取用户信息时出错，未知错误' }
 	}
 }
-
 
 /**
  * 通过 uid 获取（其他）用户信息
@@ -2264,6 +2268,51 @@ export const checkUsernameService = async (checkUsernameRequest: CheckUsernameRe
 }
 
 /**
+ * 根据 UUID 校验用户是否已经存在
+ * @param checkUserExistsByUuidRequest 根据 UUID 校验用户是否已经存在的请求载荷
+ * @returns 根据 UUID 校验用户是否已经存在的请求响应
+ */
+export const checkUserExistsByUuidService = async (checkUserExistsByUuidRequest: CheckUserExistsByUuidRequestDto): Promise<CheckUserExistsByUuidResponseDto> => {
+	try {
+		if (!checkCheckUserExistsByUuidRequest(checkUserExistsByUuidRequest)) {
+			console.error('ERROR', '查询用户是否存在时失败：参数不合法')
+			return { success: false, exists: false, message: '查询用户是否存在时失败：参数不合法' }
+		}
+
+		const { uuid } = checkUserExistsByUuidRequest
+		const { collectionName, schemaInstance } = UserAuthSchema
+		type UserAuth = InferSchemaType<typeof schemaInstance>
+		const where: QueryType<UserAuth> = {
+			uuid,
+		}
+		const select: SelectType<UserAuth> = {
+			UUID: 1,
+		}
+
+		let result: DbPoolResultsType<UserAuth>
+		try {
+			result = await selectDataFromMongoDB(where, select, schemaInstance, collectionName)
+		} catch (error) {
+			console.error('ERROR', '根据 UUID 校验用户是否已经存在时出错：查询出错', error)
+			return { success: false, exists: false, message: '根据 UUID 校验用户是否已经存在时出错：查询出错' }
+		}
+
+		if (result && result.success && result.result) {
+			if (result.result?.length > 0) {
+				return { success: true, exists: true, message: '用户已存在' }
+			} else {
+				return { success: true, exists: false, message: '用户不存在' }
+			}
+		} else {
+			return { success: false, exists: false, message: '查询失败' }
+		}
+	} catch (error) {
+		console.error('ERROR', '查询用户是否存在时出错：未知错误', error)
+		return { success: false, exists: false, message: '查询用户是否存在时出错：未知错误' }
+	}
+}
+
+/**
  * 根据 UID 封禁一个用户
  * @param blockUserByUIDRequest 封禁用户的请求载荷
  * @param adminUid 管理员的 UID
@@ -2372,7 +2421,6 @@ export const reactivateUserByUIDService = async (reactivateUserByUIDRequest: Rea
 		return { success: false, message: '重新激活用户时出错，未知错误' }
 	}
 }
-
 
 /**
  * 获取所有被封禁用户的信息
@@ -2781,7 +2829,6 @@ const checkUserToken = async (uid: number, token: string): Promise<boolean> => {
 		return false
 	}
 }
-
 
 /**
  * 检查用户 Token，检查 Token 和用户 uuid 是否吻合，判断用户是否已注册
@@ -4318,4 +4365,13 @@ const checkDeleteUserEmailAuthenticatorRequest = (deleteUserEmailAuthenticatorRe
 		!!deleteUserEmailAuthenticatorRequest.passwordHash
 		&& !!deleteUserEmailAuthenticatorRequest.verificationCode
 	)
+}
+
+/**
+ * 检查根据 UUID 校验用户是否已经存在的请求载荷
+ * @param checkUserExistsByUuidRequest 根据 UUID 校验用户是否已经存在的请求载荷
+ * @returns 检查结果，合法返回 true，不合法返回 false
+ */
+const checkCheckUserExistsByUuidRequest = (checkUserExistsByUuidRequest: CheckUserExistsByUuidRequestDto): boolean => {
+	return ( !!checkUserExistsByUuidRequest.uuid )
 }
