@@ -432,10 +432,15 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 					})
 
 					if (!useCorrectBackupCode) {
-						console.error('ERROR', '登录失败，备份码不正确')
-						return { success: false, message: '登录失败，备份码不正确', authenticatorType }
+							const isNumeric = /^\d+$/.test(clientOtp);
+							if (isNumeric) {
+									console.error('ERROR', '登录失败，验证码错误');
+									return { success: false, message: '登录失败，验证码错误', authenticatorType };
+							} else {
+									console.error('ERROR', '登录失败，备份码不正确');
+									return { success: false, message: '登录失败，备份码不正确', authenticatorType };
+							}
 					}
-
 					const session = await mongoose.startSession()
 					session.startTransaction()
 
