@@ -349,7 +349,7 @@ export const updateOrCreateUserInfoController = async (ctx: koaCtx, next: koaNex
 		label: data?.label,
 		userBirthday: data?.userBirthday,
 		userProfileMarkdown: data?.userProfileMarkdown,
-		userLinkAccounts: data?.userLinkAccounts,
+		userLinkedAccounts: data?.userLinkedAccounts,
 		userWebsite: data?.userWebsite,
 	}
 	const uid = parseInt(ctx.cookies.get('uid'), 10)

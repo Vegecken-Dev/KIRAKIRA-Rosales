@@ -78,7 +78,7 @@ import { DbPoolResultsType, QueryType, SelectType, UpdateType } from '../dbPool/
 import { UserAuthSchema, UserTotpAuthenticatorSchema, UserChangeEmailVerificationCodeSchema, UserChangePasswordVerificationCodeSchema, UserInfoSchema, UserInvitationCodeSchema, UserSettingsSchema, UserVerificationCodeSchema, UserEmailAuthenticatorSchema, UserEmailAuthenticatorVerificationCodeSchema } from '../dbPool/schema/UserSchema.js'
 import { getNextSequenceValueService } from './SequenceValueService.js'
 import { authenticator } from 'otplib'
-import { abortAndEndSession, commitSession, createAndStartSession } from '../common/MongoDBSessionTool.js'
+import { abortAndEndSession, commitAndEndSession, createAndStartSession } from '../common/MongoDBSessionTool.js'
 import { StorageClassAnalysisSchemaVersion } from '@aws-sdk/client-s3'
 
 authenticator.options = { window: 1 } // 设置 TOTP 宽裕一个窗口
@@ -189,7 +189,7 @@ export const userRegistrationService = async (userRegistrationRequest: UserRegis
 					username,
 					userNickname,
 					label: [] as UserInfo['label'], // TODO: Mongoose issue: #12420
-					userLinkAccounts: [] as UserInfo['userLinkAccounts'], // TODO: Mongoose issue: #12420
+					userLinkedAccounts: [] as UserInfo['userLinkedAccounts'], // TODO: Mongoose issue: #12420
 					isUpdatedAfterReview: true,
 					editDateTime: now,
 					createDateTime: now,
@@ -201,7 +201,8 @@ export const userRegistrationService = async (userRegistrationRequest: UserRegis
 				const userSettingsData: UserSettings = {
 					UUID: uuid,
 					uid,
-					userLinkAccountsPrivacySetting: [] as UserSettings['userLinkAccountsPrivacySetting'], // TODO: Mongoose issue: #12420
+					userPrivaryVisibilitiesSetting: [] as UserSettings['userPrivaryVisibilitiesSetting'], // TODO: Mongoose issue: #12420
+					userLinkedAccountsVisibilitiesSetting: [] as UserSettings['userLinkedAccountsVisibilitiesSetting'], // TODO: Mongoose issue: #12420
 					editDateTime: now,
 					createDateTime: now,
 				}
@@ -460,7 +461,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 						return { success: false, message: '登录失败，更新备份码失败', authenticatorType }
 					}
 
-					await commitSession(session)
+					await commitAndEndSession(session)
 					return { success: true, email, uid, token, UUID: uuid, message: '用户使用备用码登录成功', authenticatorType }
 				} else {
 					return { success: true, email, uid, token, UUID: uuid, message: '用户使用 TOTP 验证码登录成功', authenticatorType }
@@ -745,7 +746,7 @@ export const updateOrCreateUserInfoService = async (updateOrCreateUserInfoReques
 				const updateUserInfoUpdate: UpdateType<UserInfo> = {
 					...updateOrCreateUserInfoRequest,
 					label: updateOrCreateUserInfoRequest.label as UserInfo['label'], // TODO: Mongoose issue: #12420
-					userLinkAccounts: updateOrCreateUserInfoRequest.userLinkAccounts as UserInfo['userLinkAccounts'], // TODO: Mongoose issue: #12420
+					userLinkedAccounts: updateOrCreateUserInfoRequest.userLinkedAccounts as UserInfo['userLinkedAccounts'], // TODO: Mongoose issue: #12420
 					isUpdatedAfterReview: true,
 					editDateTime: new Date().getTime(),
 				}
@@ -1043,7 +1044,8 @@ export const getUserSettingsService = async (uid: number, token: string): Promis
 				showCssDoodle: 1,
 				sharpAppearanceMode: 1,
 				flatAppearanceMode: 1,
-				userLinkAccountsPrivacySetting: 1,
+				userPrivaryVisibilitiesSetting: 1,
+				userLinkedAccountsVisibilitiesSetting: 1,
 				userWebsitePrivacySetting: 1,
 				editDateTime: 1,
 			}
@@ -1079,6 +1081,7 @@ export const getUserSettingsService = async (uid: number, token: string): Promis
  */
 export const updateOrCreateUserSettingsService = async (updateOrCreateUserSettingsRequest: UpdateOrCreateUserSettingsRequestDto, uid: number, token: string): Promise<UpdateOrCreateUserSettingsResponseDto> => {
 	try {
+		const now = new Date().getTime();
 		if (await checkUserToken(uid, token)) {
 			const UUID = await getUserUuid(uid) // DELETE ME 这是一个临时解决方法，Cookie 中应当存储 UUID
 			if (!UUID) {
@@ -1094,8 +1097,9 @@ export const updateOrCreateUserSettingsService = async (updateOrCreateUserSettin
 				}
 				const updateOrCreateUserSettingsUpdate: UpdateType<UserSettings> = {
 					...updateOrCreateUserSettingsRequest,
-					userLinkAccountsPrivacySetting: updateOrCreateUserSettingsRequest.userLinkAccountsPrivacySetting as UserSettings['userLinkAccountsPrivacySetting'], // TODO: Mongoose issue: #12420
-					editDateTime: new Date().getTime(),
+					userPrivaryVisibilitiesSetting: updateOrCreateUserSettingsRequest.userPrivaryVisibilitiesSetting as UserSettings['userPrivaryVisibilitiesSetting'], // TODO: Mongoose issue: #12420
+					userLinkedAccountsVisibilitiesSetting: updateOrCreateUserSettingsRequest.userLinkedAccountsVisibilitiesSetting as UserSettings['userLinkedAccountsVisibilitiesSetting'], // TODO: Mongoose issue: #12420
+					editDateTime: now
 				}
 				const updateResult = await findOneAndUpdateData4MongoDB(updateOrCreateUserSettingsWhere, updateOrCreateUserSettingsUpdate, schemaInstance, collectionName)
 				const userSettings = updateResult?.result?.[0]
@@ -2726,7 +2730,7 @@ export const adminClearUserInfoService = async (adminClearUserInfoRequest: Admin
 			label: [] as UserInfo['label'], // TODO: Mongoose issue: #12420
 			userBirthday: -1,
 			userProfileMarkdown: '',
-			userLinkAccounts: [] as UserInfo['userLinkAccounts'], // TODO: Mongoose issue: #12420
+			userLinkedAccounts: [] as UserInfo['userLinkedAccounts'], // TODO: Mongoose issue: #12420
 			userWebsite: { websiteName: '', websiteUrl: '' },
 			isUpdatedAfterReview: false, // 清除信息的直接设为 false
 			editDateTime: new Date().getTime(),
@@ -3969,7 +3973,7 @@ export const deleteUserEmailAuthenticatorService = async (deleteUserEmailAuthent
 			return { success: false, message: '用户删除 Email 2FA 时失败，用户关闭 2FA 失败' }
 		}
 
-		await commitSession(session)
+		await commitAndEndSession(session)
 		return { success: true, message: '用户删除 Email 2FA 成功' }
 	} catch (error) {
 		console.error('用户删除 Email 2FA 时出错，未知错误', error)
@@ -4132,28 +4136,43 @@ const checkUpdateUserEmailRequest = (updateUserEmailRequest: UpdateUserEmailRequ
 	)
 }
 
-// WARN // TODO 或许这些数据放到环境变量里更好？
-const ALLOWED_ACCOUNT_TYPE = [
-	'X', // Twitter → X
-	'qq',
-	'wechat',
-	'bili', // 哔哩哔哩
-	'niconico',
-	'youtube',
-	'otomadwiki', // 音 MAD 维基
-	'weibo', // 新浪微博
-	'NECM', // 网易云音乐
-	'discord',
-	'telegram',
-	'midishow',
-	'linkedin',
-	'facebook',
-	'ins', // Instagram
-	'douyin', // 抖音
-	'tiktok', // TikTok
-	'pixiv',
-	'coub',
-	'github',
+/**
+ * 允许关联的平台列表
+ * // TODO 或许这些数据放到环境变量里更好？
+ */
+const ALLOWED_PLATFORM_ID = [
+	'platform.twitter', // Twitter → X
+	'platform.qq',
+	'platform.wechat', // 微信
+	'platform.bilibili',
+	'platform.niconico',
+	'platform.youtube',
+	'platform.otomad_wiki', // 音 MAD 维基
+	'platform.weibo', // 新浪微博
+	'platform.tieba', // 百度贴吧
+	'platform.cloudmusic', // 网易云音乐
+	'platform.discord',
+	'platform.telegram',
+	'platform.midishow',
+	'platform.linkedin', // 领英（海外版）
+	'platform.facebook',
+	'platform.instagram',
+	'platform.douyin', // 抖音
+	'platform.tiktok', // TikTok（抖音海外版）
+	'platform.pixiv',
+	'platform.github',
+]
+
+/**
+ * 允许设置的隐私设置项
+ * // TODO 或许这些数据放到环境变量里更好？
+ */
+const ALLOWED_PRIVARY_ID = [
+	'privary.birthday', // 生日
+	'privary.age', // 年龄
+	'privary.follow', // 关注
+	'privary.fans', // 粉丝
+	'privary.favorites', // 收藏
 ]
 
 /**
@@ -4168,7 +4187,7 @@ const checkUpdateOrCreateUserInfoRequest = (updateOrCreateUserInfoRequest: Updat
 		return false
 	}
 
-	if (updateOrCreateUserInfoRequest?.userLinkAccounts?.some(account => !ALLOWED_ACCOUNT_TYPE.includes(account.accountType))) {
+	if (updateOrCreateUserInfoRequest?.userLinkedAccounts?.some(account => !ALLOWED_PLATFORM_ID.includes(account.platformId))) {
 		return false
 	}
 
@@ -4187,7 +4206,11 @@ const checkUpdateOrCreateUserSettingsRequest = (updateOrCreateUserSettingsReques
 		return false
 	}
 
-	if (updateOrCreateUserSettingsRequest?.userLinkAccountsPrivacySetting?.some(account => !ALLOWED_ACCOUNT_TYPE.includes(account.accountType))) {
+	if (updateOrCreateUserSettingsRequest?.userLinkedAccountsVisibilitiesSetting?.some(account => !ALLOWED_PLATFORM_ID.includes(account.platformId))) {
+		return false
+	}
+
+	if (updateOrCreateUserSettingsRequest?.userPrivaryVisibilitiesSetting?.some(account => !ALLOWED_PRIVARY_ID.includes(account.privaryId))) {
 		return false
 	}
 

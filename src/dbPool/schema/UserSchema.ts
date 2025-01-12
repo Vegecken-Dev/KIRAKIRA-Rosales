@@ -49,9 +49,9 @@ const UserLabelSchema = {
 /**
  * 用户的关联账户
  */
-const UserLinkAccountsSchema = {
-	/** 关联账户类型 - 非空 - 例："X" */
-	accountType: { type: String, required: true },
+const UserLinkedAccountsSchema = {
+	/** 关联账户的平台 - 非空 - 例："X" */
+	platformId: { type: String, required: true },
 	/** 关联账户唯一标识 - 非空 */
 	accountUniqueId: { type: String, required: true },
 }
@@ -95,7 +95,7 @@ class UserInfoSchemaFactory {
 		/** 用户主页 Markdown */
 		userProfileMarkdown: { type: String },
 		/** 用户的关联账户 */
-		userLinkAccounts: { type: [UserLinkAccountsSchema], required: false },
+		userLinkedAccounts: { type: [UserLinkedAccountsSchema], required: false },
 		/** 用户关联网站 */
 		userWebsite: { type: UserWebsiteSchema },
 		/** 是否在上一次审核通过后修改了用户信息，当第一次创建和用户信息发生更新时需要设为 ture，当管理员通过审核时时将其改为 false */
@@ -113,13 +113,23 @@ class UserInfoSchemaFactory {
 export const UserInfoSchema = new UserInfoSchemaFactory()
 
 /**
- * 用户关联账户的隐私设置
+ * 用户关联平台的隐私可见性设置
  */
-const UserLinkAccountsPrivacySettingSchema = {
-	/** 关联账户类型 - 非空 - 例："X" */
-	accountType: { type: String, required: true },
+const UserLinkedAccountsVisibilitiesSettingSchema = {
+	/** 关联平台的 ID - 非空 - 例：'X', 'wechat', 'bilibili' */
+	platformId: { type: String, required: true },
 	/** 显示方式 - 非空 - 允许的值有：{public: 公开, following: 仅关注, private: 隐藏} */
-	privacyType: { type: String, required: true },
+	visibilitiesType: { type: String, required: true },
+}
+
+/**
+ * 用户隐私数据可见性设置
+ */
+const UserPrivaryVisibilitiesSettingSchema = {
+	/** 用户隐私数据项的 ID - 非空 - 例：'birthday', 'follow', 'fans' */
+	privaryId: { type: String, required: true },
+	/** 显示方式 - 非空 - 允许的值有：{public: 公开, following: 仅关注, private: 隐藏} */
+	visibilitiesType: { type: String, required: true },
 }
 
 /**
@@ -172,8 +182,10 @@ class UserSettingsSchemaFactory {
 		flatAppearanceMode: { type: Boolean },
 		/** 用户关联网站的隐私设置 */
 		userWebsitePrivacySetting: { type: String },
-		/** 用户关联账户的隐私设置 */
-		userLinkAccountsPrivacySetting: { type: [UserLinkAccountsPrivacySettingSchema] },
+		/** 用户隐私数据可见性设置 */
+		userPrivaryVisibilitiesSetting: { type: [UserPrivaryVisibilitiesSettingSchema] },
+		/** 用户关联平台的隐私可见性设置 */
+		userLinkedAccountsVisibilitiesSetting: { type: [UserLinkedAccountsVisibilitiesSettingSchema] },
 		/** 系统专用字段-最后编辑时间 - 非空 */
 		editDateTime: { type: Number, required: true },
 		/** 系统专用字段-创建时间 - 非空 */

@@ -39,7 +39,7 @@ export const abortAndEndSession = async (session: ClientSession): Promise<boolea
  * @param session 事务 session
  * @returns 成功提交并结束事务返回 true，否则返回 false
  */
-export const commitSession = async (session: ClientSession): Promise<boolean> => {
+export const commitAndEndSession = async (session: ClientSession): Promise<boolean> => {
 	if (!session) {
 		return false
 	}
