@@ -287,6 +287,13 @@ export type GetUserInfoByUidResponseDto = {
 		userCreateDateTime?: number;
 		/** 用户的角色 */
 		role?: string;
+		/** 是否正在关注该用户 */
+		isFollowing: boolean;
+		/** 
+		 * 查询的用户是否是自己。
+		 * 如果该字段的值为 true，则通常意味着发生了错误的请求，因为有专用的接口用于查询用户自己的信息。
+		 */
+		isSlef: boolean;
 	};
 }
 

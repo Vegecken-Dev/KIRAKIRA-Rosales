@@ -1,6 +1,6 @@
 import { InferSchemaType } from "mongoose";
-import { FeedingUploaderRequestDto, FeedingUploaderResponseDto, UnfeedingUploaderRequestDto, UnfeedingUploaderResponseDto } from "../controller/FeedControllerDto.js";
-import { FeedSchema, UnfeedSchema } from "../dbPool/schema/FeedSchema.js";
+import { FOLLOWING_TYPE, FollowingUploaderRequestDto, FollowingUploaderResponseDto, UnfollowingUploaderRequestDto, UnfollowingUploaderResponseDto } from "../controller/FeedControllerDto.js";
+import { FollowingSchema, UnfollowingSchema } from "../dbPool/schema/FeedSchema.js";
 import { checkUserExistsByUuidService, checkUserRoleByUUIDService, checkUserTokenByUuidService } from "./UserService.js";
 import { QueryType, SelectType } from "../dbPool/DbClusterPoolTypes.js";
 import { deleteDataFromMongoDB, insertData2MongoDB, selectDataFromMongoDB } from "../dbPool/DbClusterPool.js";
@@ -8,16 +8,16 @@ import { abortAndEndSession, commitAndEndSession, createAndStartSession } from "
 
 /**
  * 用户关注一个创作者
- * @param feedingUploaderRequest 用户关注一个创作者的请求载荷
+ * @param followingUploaderRequest 用户关注一个创作者的请求载荷
  * @param uuid 用户的 UUID
  * @param token 用户的 token
  * @returns 用户关注一个创作者的请求响应
  */
-export const feedingUploaderService = async (feedingUploaderRequest: FeedingUploaderRequestDto, uuid: string, token: string): Promise<FeedingUploaderResponseDto> => {
+export const followingUploaderService = async (followingUploaderRequest: FollowingUploaderRequestDto, uuid: string, token: string): Promise<FollowingUploaderResponseDto> => {
 	try {
 		const now = new Date().getTime()
 		const followerUuid = uuid
-		const { followingUuid } = feedingUploaderRequest
+		const { followingUuid } = followingUploaderRequest
 
 		if (followerUuid === followingUuid) {
 			console.error('ERROR', '关注用户失败：不能自己关注自己。')
@@ -45,20 +45,20 @@ export const feedingUploaderService = async (feedingUploaderRequest: FeedingUplo
 			return { success: false, message: '关注用户失败，被关注用户已封禁' }
 		}
 
-		const { collectionName: feedSchemaCollectionName, schemaInstance: feedSchemaInstance } = FeedSchema
-		type Feed = InferSchemaType<typeof feedSchemaInstance>
-		const feedData: Feed = {
+		const { collectionName: followingSchemaCollectionName, schemaInstance: followingSchemaInstance } = FollowingSchema
+		type Following = InferSchemaType<typeof followingSchemaInstance>
+		const followingData: Following = {
 			followerUuid,
 			followingUuid,
-			feedType: 'uploader',
+			followingType: FOLLOWING_TYPE.uploader,
 			isFavourity: false,
-			feedingEditDateTime: now,
-			feedingCreateTime: now,
+			followingEditDateTime: now,
+			followingCreateTime: now,
 		}
 
-		const insertFeedDataResult = await insertData2MongoDB(feedData, feedSchemaInstance, feedSchemaCollectionName)
+		const insertFollowingDataResult = await insertData2MongoDB<Following>(followingData, followingSchemaInstance, followingSchemaCollectionName)
 
-		if (!insertFeedDataResult.success) {
+		if (!insertFollowingDataResult.success) {
 			console.error('ERROR', '关注用户失败，插入数据失败。')
 			return { success: false, message: '关注用户失败，插入数据失败。' }
 		}
@@ -72,16 +72,16 @@ export const feedingUploaderService = async (feedingUploaderRequest: FeedingUplo
 
 /**
  * 用户取消关注一个创作者
- * @param feedingUploaderRequest 用户取消关注一个创作者的请求载荷
+ * @param followingUploaderRequest 用户取消关注一个创作者的请求载荷
  * @param uuid 用户的 UUID
  * @param token 用户的 token
  * @returns 用户取消关注一个创作者的请求响应
  */
-export const unfeedingUploaderService = async (unfeedingUploaderRequest: UnfeedingUploaderRequestDto, uuid: string, token: string): Promise<UnfeedingUploaderResponseDto> => {
+export const unfollowingUploaderService = async (unfollowingUploaderRequest: UnfollowingUploaderRequestDto, uuid: string, token: string): Promise<UnfollowingUploaderResponseDto> => {
 	try {
 		const now = new Date().getTime()
 		const followerUuid = uuid
-		const { unfollowingUuid } = unfeedingUploaderRequest
+		const { unfollowingUuid } = unfollowingUploaderRequest
 
 		if (followerUuid === unfollowingUuid) {
 			console.error('ERROR', '取消关注用户失败：不能取消关注自己。')
@@ -104,54 +104,54 @@ export const unfeedingUploaderService = async (unfeedingUploaderRequest: Unfeedi
 			return { success: false, message: '取消关注用户失败，发起取消关注的用户已封禁' }
 		}
 
-		const { collectionName: feedSchemaCollectionName, schemaInstance: feedSchemaInstance } = FeedSchema
-		const { collectionName: unfeedSchemaCollectionName, schemaInstance: unfeedSchemaInstance } = UnfeedSchema
-		type Feed = InferSchemaType<typeof feedSchemaInstance>
-		type Unfeed = InferSchemaType<typeof unfeedSchemaInstance>
+		const { collectionName: followingSchemaCollectionName, schemaInstance: followingSchemaInstance } = FollowingSchema
+		const { collectionName: unfollowingSchemaCollectionName, schemaInstance: unfollowingSchemaInstance } = UnfollowingSchema
+		type Following = InferSchemaType<typeof followingSchemaInstance>
+		type Unfollowing = InferSchemaType<typeof unfollowingSchemaInstance>
 
-		const feedWhere: QueryType<Feed> = {
+		const followingWhere: QueryType<Following> = {
 			followerUuid,
 			followingUuid: unfollowingUuid,
 		}
-		const feedSelect: SelectType<Feed> = {
+		const followingSelect: SelectType<Following> = {
 			followerUuid: 1,
 			followingUuid: 1,
-			feedType: 1,
+			followingType: 1,
 			isFavourity: 1,
-			feedingEditDateTime: 1,
-			feedingCreateTime: 1,
+			followingEditDateTime: 1,
+			followingCreateTime: 1,
 		}
 
 		const session = await createAndStartSession()
 		
-		const selectUnfeedDataResult = await selectDataFromMongoDB<Feed>(feedWhere, feedSelect, feedSchemaInstance, feedSchemaCollectionName, { session })
-		const selectUnfeedData = selectUnfeedDataResult?.result?.[0]
+		const selectUnfollowingDataResult = await selectDataFromMongoDB<Following>(followingWhere, followingSelect, followingSchemaInstance, followingSchemaCollectionName, { session })
+		const selectUnfollowingData = selectUnfollowingDataResult?.result?.[0]
 
-		if (!selectUnfeedDataResult.success && selectUnfeedDataResult.result.length !== 1 && selectUnfeedData) {
+		if (!selectUnfollowingDataResult.success && selectUnfollowingDataResult.result.length !== 1 && selectUnfollowingData) {
 			await abortAndEndSession(session)
 			console.error('ERROR', '取消关注用户失败，读取关注数据失败。')
 			return { success: false, message: '取消关注用户失败，读取关注数据失败。' }
 		}
 
-		const unfeedData: Unfeed = {
-			...selectUnfeedData,
-			unfeedReasonType: 'normal',
+		const unfollowingData: Unfollowing = {
+			...selectUnfollowingData,
+			unfollowingReasonType: 'normal',
 			unfollowingDateTime: now,
-			unfeedingEditDateTime: now,
-			unfeedingCreateTime: now,
+			unfollowingEditDateTime: now,
+			unfollowingCreateTime: now,
 		}
 		
-		const insertUnfeedDataResult = await insertData2MongoDB(unfeedData, unfeedSchemaInstance, unfeedSchemaCollectionName, { session })
+		const insertUnfollowingDataResult = await insertData2MongoDB<Unfollowing>(unfollowingData, unfollowingSchemaInstance, unfollowingSchemaCollectionName, { session })
 
-		if (!insertUnfeedDataResult.success) {
+		if (!insertUnfollowingDataResult.success) {
 			await abortAndEndSession(session)
 			console.error('ERROR', '取消关注用户失败，记录处理失败。')
 			return { success: false, message: '取消关注用户失败，记录处理失败。' }
 		}
 
-		const deleteFeedDataResult = await deleteDataFromMongoDB(feedWhere, feedSchemaInstance, feedSchemaCollectionName, { session })
+		const deleteFollowingDataResult = await deleteDataFromMongoDB<Following>(followingWhere, followingSchemaInstance, followingSchemaCollectionName, { session })
 		
-		if (!deleteFeedDataResult.success) {
+		if (!deleteFollowingDataResult.success) {
 			await abortAndEndSession(session)
 			console.error('ERROR', '取消关注用户失败，删除关注记录失败。')
 			return { success: false, message: '取消关注用户失败，删除关注记录失败。' }

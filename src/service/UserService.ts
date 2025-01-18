@@ -80,6 +80,7 @@ import { getNextSequenceValueService } from './SequenceValueService.js'
 import { authenticator } from 'otplib'
 import { abortAndEndSession, commitAndEndSession, createAndStartSession } from '../common/MongoDBSessionTool.js'
 import { StorageClassAnalysisSchemaVersion } from '@aws-sdk/client-s3'
+import { FollowingSchema } from '../dbPool/schema/FeedSchema.js'
 
 authenticator.options = { window: 1 } // 设置 TOTP 宽裕一个窗口
 
@@ -925,55 +926,93 @@ export const getSelfUserInfoByUuidService = async (getSelfUserInfoByUuidRequest:
  * @param uid 用户 ID
  * @returns 获取用户信息的请求结果
  */
-export const getUserInfoByUidService = async (getUserInfoByUidRequest: GetUserInfoByUidRequestDto): Promise<GetUserInfoByUidResponseDto> => {
+export const getUserInfoByUidService = async (getUserInfoByUidRequest: GetUserInfoByUidRequestDto, selectorUuid?: string, selectorToken?: string): Promise<GetUserInfoByUidResponseDto> => {
 	try {
-		const uid = getUserInfoByUidRequest?.uid
-		if (uid !== null && uid !== undefined) {
-			const { collectionName: userAuthCollectionName, schemaInstance: userAuthSchemaInstance } = UserAuthSchema
-			type UserAuth = InferSchemaType<typeof userAuthSchemaInstance>
-			const userAuthWhere: QueryType<UserAuth> = { uid }
-			const userAuthSelect: SelectType<UserAuth> = {
-				userCreateDateTime: 1, // 用户创建日期
-				role: 1, // 用户的角色
-			}
-
-			const { collectionName: userInfoCollectionName, schemaInstance: userInfoSchemaInstance } = UserInfoSchema
-			type UserInfo = InferSchemaType<typeof userInfoSchemaInstance>
-			const getUserInfoWhere: QueryType<UserInfo> = { uid }
-			const getUserInfoSelect: SelectType<UserInfo> = {
-				label: 1, // 用户标签
-				username: 1, // 用户名
-				userNickname: 1, // 用户昵称
-				avatar: 1, // 用户头像
-				userBannerImage: 1, // 用户的背景图
-				signature: 1, // 用户的个性签名
-				gender: 1, // 用户的性别
-			}
-
-			try {
-				const userAuthPromise = selectDataFromMongoDB<UserAuth>(userAuthWhere, userAuthSelect, userAuthSchemaInstance, userAuthCollectionName)
-				const userInfoPromise = selectDataFromMongoDB(getUserInfoWhere, getUserInfoSelect, userInfoSchemaInstance, userInfoCollectionName)
-				const [userAuthResult, userInfoResult] = await Promise.all([userAuthPromise, userInfoPromise])
-				if (userAuthResult && userAuthResult.success && userInfoResult && userInfoResult.success) {
-					const userAuth = userAuthResult?.result
-					const userInfo = userInfoResult?.result
-					if (userInfo?.length === 1 && userInfo?.[0]) {
-						return { success: true, message: '获取用户信息成功', result: { ...userInfo[0], userCreateDateTime: userAuth[0].userCreateDateTime, role: userAuth[0].role } }
-					} else {
-						console.error('ERROR', '获取用户信息时失败，获取到的结果长度不为 1')
-						return { success: false, message: '获取用户信息时失败，结果异常' }
-					}
-				} else {
-					console.error('ERROR', '获取用户信息时失败，获取到的结果为空')
-					return { success: false, message: '获取用户信息时失败，结果为空' }
-				}
-			} catch (error) {
-				console.error('ERROR', '获取用户信息时失败，查询数据时出错：0', error)
-				return { success: false, message: '获取用户信息时失败' }
-			}
-		} else {
+		const { uid } = getUserInfoByUidRequest
+		if (uid === null || uid === undefined) {
 			console.error('ERROR', '获取用户信息时失败，uid 或 token 为空')
 			return { success: false, message: '获取用户信息时失败，必要的参数为空' }
+		}
+		
+		const { collectionName: userAuthCollectionName, schemaInstance: userAuthSchemaInstance } = UserAuthSchema
+		type UserAuth = InferSchemaType<typeof userAuthSchemaInstance>
+		const userAuthWhere: QueryType<UserAuth> = { uid }
+		const userAuthSelect: SelectType<UserAuth> = {
+			UUID: 1, // UUID
+			userCreateDateTime: 1, // 用户创建日期
+			role: 1, // 用户的角色
+		}
+
+		const { collectionName: userInfoCollectionName, schemaInstance: userInfoSchemaInstance } = UserInfoSchema
+		type UserInfo = InferSchemaType<typeof userInfoSchemaInstance>
+		const getUserInfoWhere: QueryType<UserInfo> = { uid }
+		const getUserInfoSelect: SelectType<UserInfo> = {
+			label: 1, // 用户标签
+			username: 1, // 用户名
+			userNickname: 1, // 用户昵称
+			avatar: 1, // 用户头像
+			userBannerImage: 1, // 用户的背景图
+			signature: 1, // 用户的个性签名
+			gender: 1, // 用户的性别
+		}
+
+		try {
+			const session = await createAndStartSession()
+			const userAuthPromise = selectDataFromMongoDB<UserAuth>(userAuthWhere, userAuthSelect, userAuthSchemaInstance, userAuthCollectionName)
+			const userInfoPromise = selectDataFromMongoDB(getUserInfoWhere, getUserInfoSelect, userInfoSchemaInstance, userInfoCollectionName)
+			const [userAuthResult, userInfoResult] = await Promise.all([userAuthPromise, userInfoPromise])
+			if (!userAuthResult || !userAuthResult.success || !userInfoResult || !userInfoResult.success) {
+				await abortAndEndSession(session)
+				console.error('ERROR', '获取用户信息时失败，获取到的结果为空')
+				return { success: false, message: '获取用户信息时失败，结果为空' }
+			}
+			const userAuth = userAuthResult?.result
+			const uuid = userAuth?.[0]?.UUID
+			const userInfo = userInfoResult?.result
+			if (userInfo?.length !== 1 || !userInfo[0] || userAuth?.length !== 1 || !uuid) {
+				await abortAndEndSession(session)
+				console.error('ERROR', '获取用户信息时失败，获取到的结果长度不为 1')
+				return { success: false, message: '获取用户信息时失败，结果异常' }
+			}
+
+			let isSelf = uuid === selectorUuid // 查询的用户是否是自己。
+			let isFollowing = false; // 是否已关注该用户，默认没有被关注。
+			if ( selectorUuid && selectorToken && !isSelf && await checkUserTokenByUUID(selectorUuid, selectorToken)) { // 如果传递了 uuid 和 token，而且用户不是自己，且校验通过，则检查被获取信息的用户是否是已被关注。
+				const { collectionName: followingSchemaCollectionName, schemaInstance: followingSchemaInstance } = FollowingSchema
+				type Following = InferSchemaType<typeof followingSchemaInstance>
+		
+				const followingWhere: QueryType<Following> = {
+					followerUuid: selectorUuid,
+					followingUuid: uuid,
+				}
+				const followingSelect: SelectType<Following> = {
+					followerUuid: 1,
+					followingUuid: 1,
+					followingType: 1,
+				}
+		
+				const selectFollowingDataResult = await selectDataFromMongoDB<Following>(followingWhere, followingSelect, followingSchemaInstance, followingSchemaCollectionName, { session })
+				const followingResult = selectFollowingDataResult?.result
+				if (selectFollowingDataResult.success && followingResult.length === 1) {
+					isFollowing = true
+				}
+			}
+
+			await commitAndEndSession(session)
+			return {
+				success: true,
+				message: '获取用户信息成功',
+				result: {
+					...userInfo[0],
+					userCreateDateTime: userAuth[0].userCreateDateTime,
+					role: userAuth[0].role,
+					isFollowing,
+					isSelf,
+				}
+			}
+		} catch (error) {
+			console.error('ERROR', '获取用户信息时失败，查询数据时出错：0', error)
+			return { success: false, message: '获取用户信息时失败' }
 		}
 	} catch (error) {
 		console.error('ERROR', '获取用户信息时失败，未知错误：', error)
@@ -2755,7 +2794,6 @@ export const adminClearUserInfoService = async (adminClearUserInfoRequest: Admin
 
 /**
  * 根据 UID 获取 UUID
- * // DELETE ME 这是一个临时的解决方案，以后 Cookie 中直接存储 UUID
  * @param uid 用户 UID
  * @returns UUID
  */

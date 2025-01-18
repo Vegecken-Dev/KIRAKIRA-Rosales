@@ -405,7 +405,9 @@ export const getUserInfoByUidController = async (ctx: koaCtx, next: koaNext) => 
 	const getUserInfoByUidRequest: GetUserInfoByUidRequestDto = {
 		uid: uid ? parseInt(uid, 10) : -1, // WARN -1 代表这个 UID 是永远无法查找到结果
 	}
-	ctx.body = await getUserInfoByUidService(getUserInfoByUidRequest)
+	const uuid = ctx.cookies.get('uuid')
+	const token = ctx.cookies.get('token')
+	ctx.body = await getUserInfoByUidService(getUserInfoByUidRequest, uuid, token)
 	await next()
 }
 
