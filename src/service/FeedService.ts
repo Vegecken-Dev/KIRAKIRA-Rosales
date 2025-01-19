@@ -1,5 +1,5 @@
 import { InferSchemaType } from "mongoose";
-import { FOLLOWING_TYPE, FollowingUploaderRequestDto, FollowingUploaderResponseDto, UnfollowingUploaderRequestDto, UnfollowingUploaderResponseDto } from "../controller/FeedControllerDto.js";
+import { FOLLOWING_TYPE, FollowingUploaderRequestDto, FollowingUploaderResponseDto, UnfollowingUploaderRequestDto, UnfollowingUploaderResponseDto} from "../controller/FeedControllerDto.js";
 import { FollowingSchema, UnfollowingSchema } from "../dbPool/schema/FeedSchema.js";
 import { checkUserExistsByUuidService, checkUserRoleByUUIDService, checkUserTokenByUuidService } from "./UserService.js";
 import { QueryType, SelectType } from "../dbPool/DbClusterPoolTypes.js";
@@ -50,7 +50,7 @@ export const followingUploaderService = async (followingUploaderRequest: Followi
 		const followingData: Following = {
 			followerUuid,
 			followingUuid,
-			followingType: FOLLOWING_TYPE.uploader,
+			followingType: FOLLOWING_TYPE.normal,
 			isFavourity: false,
 			followingEditDateTime: now,
 			followingCreateTime: now,

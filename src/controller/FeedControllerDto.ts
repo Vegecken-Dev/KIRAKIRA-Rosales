@@ -1,13 +1,13 @@
 /** 关注的类型 */
 export enum FOLLOWING_TYPE {
 	/** 通过视频页面或者用户页面等页面的关注按钮正常关注 */
-	uploader = 'normal',
+	normal = 'normal',
 	/** 自动关注 */ // MEME: really?
 	auto = 'auto',
 	/** 通过活动页面关注 */
-	evnent = 'event',
+	event = 'event',
 	/** 通过活动页面自动批量关注 */
-	evnentAutoBatch = 'evnentAutoBatch',
+	eventAutoBatch = 'eventAutoBatch',
 }
 
 /**

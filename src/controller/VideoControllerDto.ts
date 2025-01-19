@@ -3,7 +3,7 @@ import { VideoTag } from './VideoTagControllerDto.js'
 /**
  * 单个视频分 P 数据参数
  */
-type VideoPartDto = {
+export type VideoPartDto = {
 	/** 分 P ID */
 	id: number;
 	/** 视频分 P 标题 */

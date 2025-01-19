@@ -4,6 +4,7 @@
 		"esModuleInterop": true,
 		"moduleResolution": "NodeNext",
 		"outDir": "./dist",
+		"declaration": true,
 		"allowSyntheticDefaultImports": true,
 		"module": "NodeNext",
 		// "strict": true, // 好吧，严格模式
