@@ -1,12 +1,12 @@
 import { Client } from '@elastic/elasticsearch'
 import axios from 'axios'
-import mongoose, { InferSchemaType } from 'mongoose'
+import mongoose, { InferSchemaType, PipelineStage } from 'mongoose'
 import { createCloudflareImageUploadSignedUrl } from '../cloudflare/index.js'
 import { isEmptyObject } from '../common/ObjectTool.js'
 import { generateSecureRandomString } from '../common/RandomTool.js'
 import { CreateOrUpdateBrowsingHistoryRequestDto } from '../controller/BrowsingHistoryControllerDto.js'
 import { ApprovePendingReviewVideoRequestDto, ApprovePendingReviewVideoResponseDto, DeleteVideoRequestDto, DeleteVideoResponseDto, GetVideoByKvidRequestDto, GetVideoByKvidResponseDto, GetVideoByUidRequestDto, GetVideoByUidResponseDto, GetVideoCoverUploadSignedUrlResponseDto, GetVideoFileTusEndpointRequestDto, PendingReviewVideoResponseDto, SearchVideoByKeywordRequestDto, SearchVideoByKeywordResponseDto, SearchVideoByVideoTagIdRequestDto, SearchVideoByVideoTagIdResponseDto, ThumbVideoResponseDto, UploadVideoRequestDto, UploadVideoResponseDto, VideoPartDto } from '../controller/VideoControllerDto.js'
-import { DbPoolOptions, deleteDataFromMongoDB, findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataFromMongoDB } from '../dbPool/DbClusterPool.js'
+import { DbPoolOptions, deleteDataFromMongoDB, findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataByAggregateFromMongoDB, selectDataFromMongoDB } from '../dbPool/DbClusterPool.js'
 import { OrderByType, QueryType, SelectType, UpdateType } from '../dbPool/DbClusterPoolTypes.js'
 import { UserInfoSchema } from '../dbPool/schema/UserSchema.js'
 import { RemovedVideoSchema, VideoSchema } from '../dbPool/schema/VideoSchema.js'
@@ -151,72 +151,60 @@ export const updateVideoService = async (uploadVideoRequest: UploadVideoRequestD
 }
 
 /**
- * 获取主页视频 // TODO 应该使用推荐算法，而不是获取全部视频
+ * 获取主页视频 // TODO 应该使用推荐算法，而不是获取最后上传的 100 个视频
  * @returns 获取主页视频的请求响应
  */
 export const getThumbVideoService = async (): Promise<ThumbVideoResponseDto> => {
 	try {
 		const { collectionName: videoCollectionName, schemaInstance: videoSchemaInstance } = VideoSchema
-		const { collectionName: userInfoCollectionName, schemaInstance: userInfoSchemaInstance } = UserInfoSchema
-		type Video = InferSchemaType<typeof videoSchemaInstance>
-		type UserInfo = InferSchemaType<typeof userInfoSchemaInstance>
-		const where: QueryType<Video> = {}
-		const select: SelectType<Video> = {
-			videoId: 1,
-			title: 1,
-			image: 1,
-			uploadDate: 1,
-			watchedCount: 1,
-			uploaderId: 1,
-			duration: 1,
-			description: 1,
-			editDateTime: 1,
-		}
-		const orderBy: OrderByType<Video> = {
-			editDateTime: -1,
-		}
-		const uploaderInfoKey = 'uploaderInfo'
-		const option: DbPoolOptions<Video, UserInfo> = {
-			virtual: {
-				name: uploaderInfoKey, // 虚拟属性名
-				options: {
-					ref: userInfoCollectionName, // 关联的子模型
-					localField: 'uploaderId', // 父模型中用于关联的字段
-					foreignField: 'uid', // 子模型中用于关联的字段
-					justOne: true, // 如果为 true 则只一条数据关联一个文档（即使有很多符合条件的）
+		type ThumbVideo = InferSchemaType<typeof videoSchemaInstance>
+		const getThumbVideoPipeline: PipelineStage[] = [
+			{
+				$lookup: {
+					from: 'user-infos',
+					localField: 'uploaderUUID',
+					foreignField: 'UUID',
+					as: 'uploader_info',
 				},
 			},
-			populate: uploaderInfoKey,
-		}
-		try {
-			const result = await selectDataFromMongoDB<Video, UserInfo>(where, select, videoSchemaInstance, videoCollectionName, option, orderBy)
-			const videoResult = result.result
-			if (result.success && videoResult) {
-				const videosCount = videoResult?.length
-				if (videosCount && videosCount > 0) {
-					return {
-						success: true,
-						message: '获取首页视频成功',
-						videosCount,
-						videos: videoResult.map(video => {
-							if (video) {
-								const uploaderInfo = uploaderInfoKey in video && video?.[uploaderInfoKey] as UserInfo
-								if (uploaderInfo) {
-									const uploader = uploaderInfo.userNickname ?? uploaderInfo.username
-									return { ...video, uploader }
-								}
-							}
-							return { ...video, uploader: undefined }
-						}),
-					}
-				} else {
-					console.error('ERROR', '获取到的视频数组长度小于等于 0')
-					return { success: false, message: '获取首页视频时出现异常，视频数量为 0', videosCount: 0, videos: [] }
+			{ $skip: 0 }, // 跳过指定数量的文档 // TODO: 目前的值是占位符
+			{ $limit: 100 }, // 限制返回的文档数量 // TODO: 目前的值是占位符
+			{
+				$unwind: '$uploader_info',
+			},
+			{
+				$sort: {
+					uploadDate: -1, // 按 lastUpdateDateTime 降序排序
+				},
+			},
+			{
+				$project: {
+					videoId: 1,
+					title: 1,
+					image: 1,
+					uploadDate: 1,
+					watchedCount: 1,
+					uploaderId: 1, // 上传者 UID
+					duration: 1,
+					description: 1,
+					editDateTime: 1,
+					uploader: '$uploader_info.username', // 上传者的名字
+					uploaderNickname: '$uploader_info.userNickname', // 上传者的昵称
 				}
-			} else {
-				console.error('ERROR', '获取到的视频结果或视频数组为空')
-				return { success: false, message: '获取首页视频时出现异常，未获取到视频', videosCount: 0, videos: [] }
 			}
+		]
+
+		try {
+			const result = await selectDataByAggregateFromMongoDB<ThumbVideo>(videoSchemaInstance, videoCollectionName, getThumbVideoPipeline)	
+			const videoResult = result.result
+			
+			if (!result.success || !videoResult) {
+				console.error('ERROR', '获取到的视频数组长度小于等于 0')
+				return { success: false, message: '获取首页视频时出现异常，视频数量为 0', videosCount: 0, videos: [] }
+			}
+
+			const videosCount = videoResult.length
+			return { success: true, message: '获取首页视频成功', videosCount, videos: videoResult }
 		} catch (error) {
 			console.error('ERROR', '获取首页视频时出现异常，查询失败：', error)
 			return { success: false, message: '获取首页视频时出现异常', videosCount: 0, videos: [] }

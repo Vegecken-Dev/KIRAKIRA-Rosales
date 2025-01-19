@@ -82,8 +82,10 @@ export type ThumbVideoResponseDto = {
 		uploadDate?: number;
 		/** 视频播放量 */
 		watchedCount?: number;
-		/** 视频作者 ID */
+		/** 视频作者名 */
 		uploader?: string;
+		/** 视频作者昵称 */
+		uploaderNickname?: string;
 		/** 创作者 UID */
 		uploaderId?: number;
 		/** 视频时长，单位 ms */
