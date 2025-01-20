@@ -110,7 +110,7 @@ type UploaderInfoDto = {
 	/** 用户 ID */
 	uid: number;
 	/** 用户名 */
-	username?: string;
+	username: string;
 	/** 用户昵称 */
 	userNickname?: string;
 	/** 用户头像的链接 */
@@ -119,6 +119,10 @@ type UploaderInfoDto = {
 	userBannerImage?: string;
 	/** 用户的个性签名 */
 	signature?: string;
+	/** 是否正在关注该上传者 */
+	isFollowing: boolean;
+	/** 上传者是否是自己 */
+	isSelf: boolean;
 }
 
 /**

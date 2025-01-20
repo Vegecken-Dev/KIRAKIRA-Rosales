@@ -9,8 +9,8 @@ export type BrowsingHistoryCategory = 'video' | 'photo' | 'comment'
  * 用户浏览历史
  */
 type BrowsingHistory = {
-	/** 用户的 UID - 非空 */
-	uid: number;
+	/** 用户的 UUID - 非空 */
+	uuid: string;
 	/** 浏览的内容的类型，比如说 video, photo 等 - 非空 */
 	category: BrowsingHistoryCategory;
 	/** 浏览的内容的唯一 ID - 非空 */

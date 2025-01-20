@@ -2827,6 +2827,40 @@ export const getUserUuid = async (uid: number): Promise<string | void> => {
 }
 
 /**
+ * 根据 UUID 获取 UID
+ * @param uuid 用户 UUID
+ * @returns UID
+ */
+export const getUserUid = async (uuid: string): Promise<number | void> => {
+	try {
+		if (!uuid) {
+			console.error('ERROR', '通过 UUID 获取 UID 失败，UUID 不合法')
+			return
+		}
+		const { collectionName: userAuthCollectionName, schemaInstance: userAuthSchemaSchemaInstance } = UserAuthSchema
+		type UserAuth = InferSchemaType<typeof userAuthSchemaSchemaInstance>
+
+		const getUidWhere: QueryType<UserAuth> = {
+			UUID: uuid,
+		}
+
+		const getUidSelect: SelectType<UserAuth> = {
+			uid: 1,
+		}
+
+		const getUidResult = await selectDataFromMongoDB(getUidWhere, getUidSelect, userAuthSchemaSchemaInstance, userAuthCollectionName)
+		if (getUidResult.success && getUidResult.result?.length === 1) {
+			return getUidResult.result[0].uid
+		} else {
+			console.error('ERROR', '通过 UUID 获取 UID 失败，UID 不存在或结果长度不为 1')
+		}
+	} catch (error) {
+		console.error('ERROR', '通过 UUID 获取 UID 时出错：', error)
+		return
+	}
+}
+
+/**
  * 检查用户 Token，检查 Token 和用户 uid 是否吻合，判断用户是否已注册
  * // DELETE ME 这是一个临时的解决方案，以后 Cookie 中直接存储 UUID
  * @param uid 用户 ID
