@@ -14,7 +14,7 @@ export const followingUploaderController = async (ctx: koaCtx, next: koaNext) =>
 	const data = ctx.request.body as Partial<FollowingUploaderRequestDto>
 
 	const feedingUploaderRequest: FollowingUploaderRequestDto = {
-		followingUuid: data.followingUuid ?? ""
+		followingUid: data.followingUid ?? -1
 	}
 	
 	const feedingUploaderResult = await followingUploaderService(feedingUploaderRequest, uuid, token)
@@ -34,7 +34,7 @@ export const unfollowingUploaderController = async (ctx: koaCtx, next: koaNext) 
 	const data = ctx.request.body as Partial<UnfollowingUploaderRequestDto>
 
 	const unfeedingUploaderRequest: UnfollowingUploaderRequestDto = {
-		unfollowingUuid: data.unfollowingUuid ?? ""
+		unfollowingUid: data.unfollowingUid ?? -1
 	}
 	
 	const feedingUploaderResult = await unfollowingUploaderService(unfeedingUploaderRequest, uuid, token)

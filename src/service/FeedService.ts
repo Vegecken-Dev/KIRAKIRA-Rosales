@@ -1,7 +1,7 @@
 import { InferSchemaType } from "mongoose";
 import { FOLLOWING_TYPE, FollowingUploaderRequestDto, FollowingUploaderResponseDto, UnfollowingUploaderRequestDto, UnfollowingUploaderResponseDto} from "../controller/FeedControllerDto.js";
 import { FollowingSchema, UnfollowingSchema } from "../dbPool/schema/FeedSchema.js";
-import { checkUserExistsByUuidService, checkUserRoleByUUIDService, checkUserTokenByUuidService } from "./UserService.js";
+import { checkUserExistsByUuidService, checkUserRoleByUUIDService, checkUserTokenByUuidService, getUserUuid } from "./UserService.js";
 import { QueryType, SelectType } from "../dbPool/DbClusterPoolTypes.js";
 import { deleteDataFromMongoDB, insertData2MongoDB, selectDataFromMongoDB } from "../dbPool/DbClusterPool.js";
 import { abortAndEndSession, commitAndEndSession, createAndStartSession } from "../common/MongoDBSessionTool.js";
@@ -15,9 +15,16 @@ import { abortAndEndSession, commitAndEndSession, createAndStartSession } from "
  */
 export const followingUploaderService = async (followingUploaderRequest: FollowingUploaderRequestDto, uuid: string, token: string): Promise<FollowingUploaderResponseDto> => {
 	try {
+		if (!checkFollowingUploaderRequest(followingUploaderRequest)) {
+			console.error('ERROR', '关注用户失败：参数不合法。')
+			return { success: false, message: '关注用户失败：参数不合法。' }
+		}
+
 		const now = new Date().getTime()
 		const followerUuid = uuid
-		const { followingUuid } = followingUploaderRequest
+		const { followingUid } = followingUploaderRequest
+
+		const followingUuid = await getUserUuid(followingUid) as string
 
 		if (followerUuid === followingUuid) {
 			console.error('ERROR', '关注用户失败：不能自己关注自己。')
@@ -47,6 +54,27 @@ export const followingUploaderService = async (followingUploaderRequest: Followi
 
 		const { collectionName: followingSchemaCollectionName, schemaInstance: followingSchemaInstance } = FollowingSchema
 		type Following = InferSchemaType<typeof followingSchemaInstance>
+		
+		const getFollowingDataWhere: QueryType<Following> = {
+			followerUuid,
+			followingUuid,
+		}
+
+		const getFollowingDataSelect: SelectType<Following> = {
+			followerUuid: 1,
+			followingUuid: 1,
+		}
+
+		const session = await createAndStartSession()
+
+		const getFollowingData = await selectDataFromMongoDB<Following>(getFollowingDataWhere, getFollowingDataSelect, followingSchemaInstance, followingSchemaCollectionName, { session })
+		const getFollowingDataResult = getFollowingData.result
+		if (getFollowingDataResult.length > 0) {
+			await abortAndEndSession(session)
+			console.error('ERROR', '关注用户失败，用户已被关注。')
+			return { success: false, message: '关注用户失败，用户已被关注。' }
+		}
+
 		const followingData: Following = {
 			followerUuid,
 			followingUuid,
@@ -56,13 +84,15 @@ export const followingUploaderService = async (followingUploaderRequest: Followi
 			followingCreateTime: now,
 		}
 
-		const insertFollowingDataResult = await insertData2MongoDB<Following>(followingData, followingSchemaInstance, followingSchemaCollectionName)
+		const insertFollowingDataResult = await insertData2MongoDB<Following>(followingData, followingSchemaInstance, followingSchemaCollectionName, { session })
 
 		if (!insertFollowingDataResult.success) {
+			await abortAndEndSession(session)
 			console.error('ERROR', '关注用户失败，插入数据失败。')
 			return { success: false, message: '关注用户失败，插入数据失败。' }
 		}
 
+		await commitAndEndSession(session)
 		return { success: true, message: '关注用户成功！' }
 	} catch (error) {
 		console.error('ERROR', '关注用户时出错：未知原因。', error)
@@ -79,9 +109,16 @@ export const followingUploaderService = async (followingUploaderRequest: Followi
  */
 export const unfollowingUploaderService = async (unfollowingUploaderRequest: UnfollowingUploaderRequestDto, uuid: string, token: string): Promise<UnfollowingUploaderResponseDto> => {
 	try {
+		if (!checkUnfollowingUploaderRequest(unfollowingUploaderRequest)) {
+			console.error('ERROR', '取消关注用户失败：参数不合法。')
+			return { success: false, message: '取消关注用户失败：参数不合法。' }
+		}
+		
 		const now = new Date().getTime()
 		const followerUuid = uuid
-		const { unfollowingUuid } = unfollowingUploaderRequest
+		const { unfollowingUid } = unfollowingUploaderRequest
+
+		const unfollowingUuid = await getUserUuid(unfollowingUid) as string
 
 		if (followerUuid === unfollowingUuid) {
 			console.error('ERROR', '取消关注用户失败：不能取消关注自己。')
@@ -163,4 +200,22 @@ export const unfollowingUploaderService = async (unfollowingUploaderRequest: Unf
 		console.error('ERROR', '取消关注用户时出错：未知原因。', error)
 		return { success: false, message: '取消关注用户时出错：未知原因。' }
 	}
+}
+
+/**
+ * 校验用户关注一个创作者的请求载荷
+ * @param followingUploaderRequest 用户关注一个创作者的请求载荷
+ * @returns 合法返回 true, 不合法返回 false
+ */
+const checkFollowingUploaderRequest = (followingUploaderRequest: FollowingUploaderRequestDto): boolean => {
+	return ( followingUploaderRequest.followingUid !== undefined && followingUploaderRequest.followingUid !== null && followingUploaderRequest.followingUid > 0 )
+}
+
+/**
+ * 校验用户取消关注一个创作者的请求载荷
+ * @param followingUploaderRequest 用户取消关注一个创作者的请求载荷
+ * @returns 合法返回 true, 不合法返回 false
+ */
+const checkUnfollowingUploaderRequest = (unfollowingUploaderRequest: UnfollowingUploaderRequestDto): boolean => {
+	return ( unfollowingUploaderRequest.unfollowingUid !== undefined && unfollowingUploaderRequest.unfollowingUid !== null && unfollowingUploaderRequest.unfollowingUid > 0 )
 }

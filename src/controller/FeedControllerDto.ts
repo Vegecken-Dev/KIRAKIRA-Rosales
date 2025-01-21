@@ -14,8 +14,8 @@ export enum FOLLOWING_TYPE {
  * 用户关注一个创作者的请求载荷
  */
 export type FollowingUploaderRequestDto = {
-	/** 被关注者 UUID */
-	followingUuid: string;
+	/** 被关注者 UID */
+	followingUid: number;
 };
 
 /**
@@ -32,8 +32,8 @@ export type FollowingUploaderResponseDto = {
  * 用户取消关注一个创作者的请求载荷
  */
 export type UnfollowingUploaderRequestDto = {
-	/** 取消关注者 UUID */
-	unfollowingUuid: string;
+	/** 取消关注者 UID */
+	unfollowingUid: number;
 };
 
 /**

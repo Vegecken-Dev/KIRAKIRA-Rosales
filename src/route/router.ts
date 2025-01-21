@@ -44,6 +44,7 @@ import {
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
 import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
 import { createVideoTagController, getVideoTagByTagIdController, searchVideoTagController } from '../controller/VideoTagController.js'
+import { followingUploaderController } from '../controller/FeedController.js'
 
 const router = new Router()
 
@@ -538,39 +539,25 @@ router.get('/favorites', getFavoritesController) // 获取当前登录用户的�
 
 
 
-// router.post('/02/koa/user/settings/userSettings/save', saveUserSettingsByUUID)
-// // http://localhost:9999/02/koa/user/settings/userSettings/save
-// //
-// // {
-// // 	"uuid": "u00001",
-// // 	"systemStyle": "s1",
-// // 	"systemColor": "#66CCFF",
-// // 	"backgroundAnimation": "true",
-// // 	"settingPageLastEnter": "PornHub"
-// // }
 
-// router.put('/02/koa/user/settings/userSettings/update', updateUserSettingsByUUID)
-// // http://localhost:9999/02/koa/user/settings/userSettings/update
-// //
-// // {
-// // 	"uuid": "u00001",
-// // 	"systemStyle": "s1",
-// // 	"systemColor": "#66CCFF",
-// // 	"backgroundAnimation": "true",
-// // 	"settingPageLastEnter": "PornHub"
-// // }
+router.post('/feed/following', followingUploaderController) // 关注一个用户
+// https://localhost:9999/feed/following
+// cookie: uuid, token
+// {
+// 	"followingUid": 999
+// }
 
-// router.get('/02/koa/user/settings/userSettings/get', getUserSettingsByUUID)
-// // http://localhost:9999/02/koa/user/settings/userSettings/get?uuid=u00001
+router.post('/feed/unfollowing', followingUploaderController) // 取消关注一个用户
+// https://localhost:9999/feed/following
+// cookie: uuid, token
+// {
+// 	"unfollowingUid": 999
+// }
 
 
 
-// router.post('/02/koa/user/register', userRegistrationController)
-// // http://localhost:9999/02/koa/user/register
-// // {
-// // 	"userName": "u00001",
-// // 	"passwordHash": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-// // }
+
+
 
 
 
