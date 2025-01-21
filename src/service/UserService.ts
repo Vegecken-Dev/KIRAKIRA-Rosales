@@ -2190,11 +2190,11 @@ export const checkUserRoleService = async (uid: number, role: string | string[])
 					if (checkUserRoleResult.result?.length === 1) {
 						return true
 					} else {
-						console.error('ERROR', `验证用户角色时，用户信息长度不为 1，用户uid：【${uid}】`)
+						console.warn('WARN', 'WARNING', `验证用户角色时，用户信息长度不为 1，用户uid：【${uid}】`)
 						return false
 					}
 				} else {
-					console.error('ERROR', `验证用户角色时未查询到用户信息，用户uid：【${uid}】`)
+					console.warn('WARN', 'WARNING', `验证用户角色时未查询到用户信息，用户uid：【${uid}】`)
 					return false
 				}
 			} catch (error) {
@@ -2202,7 +2202,7 @@ export const checkUserRoleService = async (uid: number, role: string | string[])
 				return false
 			}
 		} else {
-			console.error('ERROR', `验证用户角色失败！用户 uid 或 role 不存在，用户 UID：${uid}`)
+			console.warn('WARN', 'WARNING', `验证用户角色失败！用户 uid 或 role 不存在，用户 UID：${uid}`)
 			return false
 		}
 	} catch (error) {
@@ -2246,11 +2246,11 @@ export const checkUserRoleByUUIDService = async (UUID: string, role: string | st
 					if (checkUserRoleResult.result?.length === 1) {
 						return true
 					} else {
-						console.error('ERROR', `验证用户角色时，用户信息长度不为 1，用户 UUID: ${UUID}`)
+						console.warn('WARN', 'WARNING', `验证用户角色时，用户信息长度不为 1，用户 UUID: ${UUID}`)
 						return false
 					}
 				} else {
-					console.error('ERROR', `验证用户角色时未查询到用户信息，用户 UUID:${UUID}`)
+					console.warn('WARN', 'WARNING', `验证用户角色时未查询到用户信息，用户 UUID:${UUID}`)
 					return false
 				}
 			} catch (error) {
@@ -2258,7 +2258,7 @@ export const checkUserRoleByUUIDService = async (UUID: string, role: string | st
 				return false
 			}
 		} else {
-			console.error('ERROR', `验证用户角色失败！用户 UUID 或 role 不存在，用户 UUID: ${UUID}`)
+			console.warn('WARN', 'WARNING', `验证用户角色失败！用户 UUID 或 role 不存在，用户 UUID: ${UUID}`)
 			return false
 		}
 	} catch (error) {
