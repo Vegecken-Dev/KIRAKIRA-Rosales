@@ -407,7 +407,8 @@ export const getUserInfoByUidController = async (ctx: koaCtx, next: koaNext) => 
 	}
 	const uuid = ctx.cookies.get('uuid')
 	const token = ctx.cookies.get('token')
-	ctx.body = await getUserInfoByUidService(getUserInfoByUidRequest, uuid, token)
+	const result = await getUserInfoByUidService(getUserInfoByUidRequest, uuid, token)
+	ctx.body = result
 	await next()
 }
 

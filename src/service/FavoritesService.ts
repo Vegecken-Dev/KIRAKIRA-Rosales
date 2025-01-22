@@ -136,7 +136,7 @@ export const getFavoritesService = async (uid: number, token: string): Promise<G
 /**
  * 检查创建收藏夹的请求载荷
  * @param createFavoritesRequest  创建收藏夹的请求载荷
-//  * @returns 合法返回 true, 不合法返回 false
+ * @returns 合法返回 true, 不合法返回 false
  */
 const checkCreateFavoritesRequest = (createFavoritesRequest: CreateFavoritesRequestDto): boolean => {
 	return (!!createFavoritesRequest.favoritesTitle && createFavoritesRequest.favoritesTitle.length < 200)

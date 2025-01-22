@@ -923,7 +923,9 @@ export const getSelfUserInfoByUuidService = async (getSelfUserInfoByUuidRequest:
 
 /**
  * 通过 uid 获取（其他）用户信息
- * @param uid 用户 ID
+ * @param getUserInfoByUidRequest 通过 UID 获取用户信息的请求载荷
+ * @param selectorUuid 发起请求者的 UUID
+ * @param selectorToken 发起请求者的 token
  * @returns 获取用户信息的请求结果
  */
 export const getUserInfoByUidService = async (getUserInfoByUidRequest: GetUserInfoByUidRequestDto, selectorUuid?: string, selectorToken?: string): Promise<GetUserInfoByUidResponseDto> => {
