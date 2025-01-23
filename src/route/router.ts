@@ -44,7 +44,7 @@ import {
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
 import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
 import { createVideoTagController, getVideoTagByTagIdController, searchVideoTagController } from '../controller/VideoTagController.js'
-import { followingUploaderController } from '../controller/FeedController.js'
+import { followingUploaderController, unfollowingUploaderController } from '../controller/FeedController.js'
 
 const router = new Router()
 
@@ -504,6 +504,11 @@ router.post('/video/tag/get', getVideoTagByTagIdController) // 根据 TAG ID 在
 
 
 
+
+
+
+
+
 router.post('/history/merge', createOrUpdateUserBrowsingHistoryController) // 更新或创建用户浏览历史 // DELETE: 该接口没必要暴露
 // https://localhost:9999/history/merge
 // cookie: uid, token
@@ -517,6 +522,12 @@ router.get('/history/filter', getUserBrowsingHistoryWithFilterController) // 获
 // https://localhost:9999/history/filter?videoTitle=foo
 // cookie: uid, token
 // > 或者你可以不包含 URL 查询以获取当前用户全部浏览历史 -> https://localhost:9999/history/filter
+
+
+
+
+
+
 
 
 
@@ -540,6 +551,8 @@ router.get('/favorites', getFavoritesController) // 获取当前登录用户的�
 
 
 
+
+
 router.post('/feed/following', followingUploaderController) // 关注一个用户
 // https://localhost:9999/feed/following
 // cookie: uuid, token
@@ -547,8 +560,8 @@ router.post('/feed/following', followingUploaderController) // 关注一个用�
 // 	"followingUid": 999
 // }
 
-router.post('/feed/unfollowing', followingUploaderController) // 取消关注一个用户
-// https://localhost:9999/feed/following
+router.post('/feed/unfollowing', unfollowingUploaderController) // 取消关注一个用户
+// https://localhost:9999/feed/unfollowing
 // cookie: uuid, token
 // {
 // 	"unfollowingUid": 999
