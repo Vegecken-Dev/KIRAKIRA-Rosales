@@ -70,6 +70,8 @@ import {
 	DeleteUserEmailAuthenticatorResponseDto,
 	SendDeleteUserEmailAuthenticatorVerificationCodeRequestDto,
 	SendDeleteUserEmailAuthenticatorVerificationCodeResponseDto,
+	UserExistsCheckByUIDRequestDto,
+	UserExistsCheckByUIDResponseDto,
 } from '../controller/UserControllerDto.js'
 import { findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataFromMongoDB, updateData4MongoDB, selectDataByAggregateFromMongoDB, deleteDataFromMongoDB } from '../dbPool/DbClusterPool.js'
 import { DbPoolResultsType, QueryType, SelectType, UpdateType } from '../dbPool/DbClusterPoolTypes.js'
@@ -770,6 +772,40 @@ export const updateOrCreateUserInfoService = async (updateOrCreateUserInfoReques
 	}
 }
 
+/**
+ * 根据 UID 获取用户是否存在
+ * @param getUserExistsByUIDRequest 获取用户是否存在的请求参数
+ * @returns 获取用户是否存在的请求结果
+ */
+export const getUserExistsByUIDService = async (UserExistsCheckByUIDRequest: UserExistsCheckByUIDRequestDto): Promise<UserExistsCheckByUIDResponseDto> => {
+	try {
+		if (!!UserExistsCheckByUIDRequest.uid) {
+			const { uid } = UserExistsCheckByUIDRequest
+			const { collectionName, schemaInstance } = UserInfoSchema
+			type UserInfo = InferSchemaType<typeof schemaInstance>
+			const where: QueryType<UserInfo> = { uid }
+			const select: SelectType<UserInfo> = { uid: 1 }
+			const result = await selectDataFromMongoDB<UserInfo>(where, select, schemaInstance, collectionName)
+			if (result.success) {
+				if (result.result?.length === 1) {
+					return { success: true, exists: true, message: '用户存在' }
+				} else {
+					return { success: true, exists: false, message: '用户不存在' }
+				}
+			} else {
+				console.error('ERROR', '获取用户是否存在时失败，查询失败')
+				return { success: false, exists: true, message: '获取用户是否存在时失败' }
+			}
+		} else {
+			console.error('ERROR', '获取用户是否存在时失败，请求参数不合法')
+			return { success: false, exists: true, message: '获取用户是否存在时失败，请求参数不合法' }
+		}
+	} catch (error) {
+		console.error('ERROR', '获取用户是否存在时失败，未知异常', error)
+		return { success: false, exists: true, message: '获取用户是否存在时失败，未知异常' }
+	}
+}
+	
 /**
  * 【已废弃】通过 uid 获取当前登录的用户信息
  * // DELETE ME: 禁止使用！该 API 应随着 UUID 普及逐渐被替换

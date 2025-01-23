@@ -73,6 +73,26 @@ export type UserLoginResponseDto = {
 }
 
 /**
+ * 检查用户是否存在的请求参数
+ */
+export type UserExistsCheckByUIDRequestDto = {
+	/** 用户 UID */
+	uid: number;
+}
+
+/**
+ * 检查用户是否存在的返回参数
+ */
+export type UserExistsCheckByUIDResponseDto = {
+	/** 执行结果，程序执行成功，返回 true，程序执行失败，返回 false */
+	success: boolean;
+	/** 用户存在或者查询失败都会返回 true，不存在返回 false */
+	exists: boolean; // WARN: 用户已存在或查询失败时都会返回 true
+	/** 附加的文本消息 */
+	message?: string;
+}
+
+/**
  * 验证用户邮箱是否存在提交的参数
  */
 export type UserExistsCheckRequestDto = {

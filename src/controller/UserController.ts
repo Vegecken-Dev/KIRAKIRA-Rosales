@@ -410,6 +410,21 @@ export const getUserInfoByUidController = async (ctx: koaCtx, next: koaNext) => 
 }
 
 /**
+ * 获取用户是否存在
+ * @param ctx context
+ * @param next context
+ * @return UserExistsCheckResultDto 检查结果
+ */
+export const userExistsCheckByUIDController = async (ctx: koaCtx, next: koaNext) => {
+	const email = ctx.query.email as string
+	const userExistsCheckRequest: UserExistsCheckRequestDto = {
+		email,
+	}
+	ctx.body = await userExistsCheckService(userExistsCheckRequest)
+	await next()
+}
+
+/**
  * 校验用户 token
  * // DELETE: 顺便给用户加上UUID
  * @param ctx context

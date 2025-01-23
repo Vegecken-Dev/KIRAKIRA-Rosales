@@ -163,6 +163,26 @@ export type GetVideoByKvidResponseDto = {
 }
 
 /**
+ * 根据视频 ID (KVID) 检查视频是否存在的请求参数
+ */
+export type CheckVideoExistRequestDto = {
+	/** 视频 ID (KVID) */
+	videoId: number;
+}
+
+/**	
+ * 根据视频 ID (KVID) 检查视频是否存在的请求响应
+ */
+export type CheckVideoExistResponseDto = {
+	/** 是否请求成功 */
+	success: boolean;
+	/** 附加的文本消息 */
+	message?: string;
+	/** 视频是否存在 */
+	exist: boolean;
+}
+
+/**
  * 从 UID 获取视频的请求参数
  */
 export type GetVideoByUidRequestDto = {
