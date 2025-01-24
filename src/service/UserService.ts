@@ -774,10 +774,10 @@ export const updateOrCreateUserInfoService = async (updateOrCreateUserInfoReques
 
 /**
  * 根据 UID 获取用户是否存在
- * @param getUserExistsByUIDRequest 获取用户是否存在的请求参数
+ * @param UserExistsCheckByUIDRequestDto 获取用户是否存在的请求参数
  * @returns 获取用户是否存在的请求结果
  */
-export const getUserExistsByUIDService = async (UserExistsCheckByUIDRequest: UserExistsCheckByUIDRequestDto): Promise<UserExistsCheckByUIDResponseDto> => {
+export const checkUserExistsByUIDService = async (UserExistsCheckByUIDRequest: UserExistsCheckByUIDRequestDto): Promise<UserExistsCheckByUIDResponseDto> => {
 	try {
 		if (!!UserExistsCheckByUIDRequest.uid) {
 			const { uid } = UserExistsCheckByUIDRequest

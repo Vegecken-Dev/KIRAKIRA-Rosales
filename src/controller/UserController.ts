@@ -37,7 +37,7 @@ import {
 	checkEmailAuthenticatorVerificationCodeService,
 	deleteUserEmailAuthenticatorService,
 	sendDeleteUserEmailAuthenticatorService,
-	getUserExistsByUIDService,
+	checkUserExistsByUIDService,
 } from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
 import {
@@ -422,7 +422,7 @@ export const userExistsCheckByUIDController = async (ctx: koaCtx, next: koaNext)
 	const userExistsCheckRequest: UserExistsCheckByUIDRequestDto = {
 		uid: uid ? parseInt(uid, 10) : -1,
 	}
-	ctx.body = await getUserExistsByUIDService(userExistsCheckRequest)
+	ctx.body = await checkUserExistsByUIDService(userExistsCheckRequest)
 	await next()
 }
 
