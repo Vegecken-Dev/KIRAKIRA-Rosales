@@ -790,7 +790,7 @@ export const getUserExistsByUIDService = async (UserExistsCheckByUIDRequest: Use
 				if (result.result?.length === 1) {
 					return { success: true, exists: true, message: '用户存在' }
 				} else {
-					return { success: true, exists: false, message: '用户不存在' }
+					return { success: true, exists: false, message: '获取用户是否存在时失败，用户不存在' }
 				}
 			} else {
 				console.error('ERROR', '获取用户是否存在时失败，查询失败')

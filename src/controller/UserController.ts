@@ -37,6 +37,7 @@ import {
 	checkEmailAuthenticatorVerificationCodeService,
 	deleteUserEmailAuthenticatorService,
 	sendDeleteUserEmailAuthenticatorService,
+	getUserExistsByUIDService,
 } from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
 import {
@@ -63,6 +64,7 @@ import {
 	UpdateOrCreateUserSettingsRequestDto,
 	UpdateUserEmailRequestDto,
 	UpdateUserPasswordRequestDto,
+	UserExistsCheckByUIDRequestDto,
 	UserExistsCheckRequestDto,
 	UserLoginRequestDto,
 	UserLogoutResponseDto,
@@ -416,11 +418,11 @@ export const getUserInfoByUidController = async (ctx: koaCtx, next: koaNext) => 
  * @return UserExistsCheckResultDto 检查结果
  */
 export const userExistsCheckByUIDController = async (ctx: koaCtx, next: koaNext) => {
-	const email = ctx.query.email as string
-	const userExistsCheckRequest: UserExistsCheckRequestDto = {
-		email,
+	const uid = ctx.query.uid as string
+	const userExistsCheckRequest: UserExistsCheckByUIDRequestDto = {
+		uid: uid ? parseInt(uid, 10) : -1,
 	}
-	ctx.body = await userExistsCheckService(userExistsCheckRequest)
+	ctx.body = await getUserExistsByUIDService(userExistsCheckRequest)
 	await next()
 }
 

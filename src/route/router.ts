@@ -190,8 +190,8 @@ router.get('/user/info', getUserInfoByUidController) // 根据 uid 获取用户�
 // https://localhost:9999/user/info?uid=10
 
 router.get('/user/exists', userExistsCheckByUIDController) // 检查用户是否存在
-// https://localhost:9999/user/exist?uid=10
-
+// https://localhost:9999/user/exists?uid=10
+	
 router.get('/user/check', checkUserTokenController) // 根据 uid, token 校验用户
 // https://localhost:9999/user/check
 // cookie: uid, token
@@ -333,8 +333,8 @@ router.post('/video/upload', updateVideoController) // 上传视频
 router.get('/video/home', getThumbVideoController) // 获取首页视频
 // https://localhost:9999/video/home
 
-router.get('/video/check', checkVideoExistController) // 根据视频 ID (KVID) 检查视频是否存在
-// https://localhost:9999/video/check?videoId=1
+router.get('/video/exists', checkVideoExistController) // 根据视频 ID (KVID) 检查视频是否存在
+// https://localhost:9999/video/exists?videoId=1
 
 router.get('/video', getVideoByKvidController) // 根据视频 ID (KVID) 获取视频的数据
 // https://localhost:9999/video?videoId=1
