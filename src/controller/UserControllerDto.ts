@@ -81,7 +81,7 @@ export type UserExistsCheckByUIDRequestDto = {
 }
 
 /**
- * 检查用户是否存在的返回参数
+ * 检查用户是否存在的请求响应
  */
 export type UserExistsCheckByUIDResponseDto = {
 	/** 执行结果，程序执行成功，返回 true，程序执行失败，返回 false */
