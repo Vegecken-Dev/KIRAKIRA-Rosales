@@ -170,7 +170,7 @@ export type CheckVideoExistRequestDto = {
 	videoId: number;
 }
 
-/**	
+/**
  * 根据视频 ID (KVID) 检查视频是否存在的请求响应
  */
 export type CheckVideoExistResponseDto = {
