@@ -770,10 +770,10 @@ export const updateOrCreateUserInfoService = async (updateOrCreateUserInfoReques
  * @param UserExistsCheckByUIDRequestDto 获取用户是否存在的请求参数
  * @returns 获取用户是否存在的请求结果
  */
-export const checkUserExistsByUIDService = async (UserExistsCheckByUIDRequest: UserExistsCheckByUIDRequestDto): Promise<UserExistsCheckByUIDResponseDto> => {
+export const checkUserExistsByUIDService = async (userExistsCheckByUIDRequest: UserExistsCheckByUIDRequestDto): Promise<UserExistsCheckByUIDResponseDto> => {
 	try {
-		if (!!UserExistsCheckByUIDRequest.uid) {
-			const { uid } = UserExistsCheckByUIDRequest
+		if (!!userExistsCheckByUIDRequest.uid) {
+			const { uid } = userExistsCheckByUIDRequest
 			const { collectionName, schemaInstance } = UserInfoSchema
 			type UserInfo = InferSchemaType<typeof schemaInstance>
 			const where: QueryType<UserInfo> = { uid }

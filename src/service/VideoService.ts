@@ -232,13 +232,13 @@ export const getThumbVideoService = async (): Promise<ThumbVideoResponseDto> => 
  * @param getVideoByKvidRequest 根据视频 ID (KVID) 检查视频是否存在的请求载荷
  * @returns 视频是否存在
  */
-export const checkVideoExistByKvidService = async (CheckVideoExistRequestDto: CheckVideoExistRequestDto): Promise<CheckVideoExistResponseDto> => {
+export const checkVideoExistByKvidService = async (checkVideoExistRequestDto: CheckVideoExistRequestDto): Promise<CheckVideoExistResponseDto> => {
 	try {
-		if (checkGetVideoByKvidRequest(CheckVideoExistRequestDto)) {
+		if (checkGetVideoByKvidRequest(checkVideoExistRequestDto)) {
 			const { collectionName, schemaInstance } = VideoSchema
 			type Video = InferSchemaType<typeof schemaInstance>
 			const where: QueryType<Video> = {
-				videoId: CheckVideoExistRequestDto.videoId,
+				videoId: checkVideoExistRequestDto.videoId,
 			}
 			const select: SelectType<Video> = {
 				videoId: 1,
