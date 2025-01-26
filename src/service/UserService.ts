@@ -529,12 +529,12 @@ export const userEmailExistsCheckService = async (userEmailExistsCheckRequest: U
 					return { success: true, exists: false, message: '用户不存在' }
 				}
 			} else {
-				return { success: false, exists: false, message: '查询失败' }
+				return { success: false, exists: true, message: '查询失败' }
 			}
 		}
 	} catch (error) {
 		console.error('ERROR', '查询用户是否存在时出错：', error)
-		return { success: false, exists: false, message: '验证用户是否存在时程序异常' }
+		return { success: false, exists: true, message: '验证用户是否存在时程序异常' }
 	}
 }
 
