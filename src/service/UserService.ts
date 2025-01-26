@@ -48,8 +48,6 @@ import {
 	UpdateUserPasswordResponseDto,
 	UseInvitationCodeDto,
 	UseInvitationCodeResultDto,
-	UserExistsCheckRequestDto,
-	UserExistsCheckResponseDto,
 	UserLoginRequestDto,
 	UserLoginResponseDto,
 	UserRegistrationRequestDto,
@@ -72,6 +70,8 @@ import {
 	SendDeleteUserEmailAuthenticatorVerificationCodeResponseDto,
 	UserExistsCheckByUIDRequestDto,
 	UserExistsCheckByUIDResponseDto,
+	UserEmailExistsCheckRequestDto,
+	UserEmailExistsCheckResponseDto,
 } from '../controller/UserControllerDto.js'
 import { findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataFromMongoDB, updateData4MongoDB, selectDataByAggregateFromMongoDB, deleteDataFromMongoDB } from '../dbPool/DbClusterPool.js'
 import { DbPoolResultsType, QueryType, SelectType, UpdateType } from '../dbPool/DbClusterPoolTypes.js'
@@ -267,6 +267,7 @@ export const userRegistrationService = async (userRegistrationRequest: UserRegis
  */
 export const userLoginService = async (userLoginRequest: UserLoginRequestDto): Promise<UserLoginResponseDto> => {
 	try {
+		// 1. 检查请求参数是否合法
 		if (!checkUserLoginRequest(userLoginRequest)) {
 			console.error('ERROR', '用户登录时程序异常：用户信息校验未通过')
 			return { success: false, message: '用户信息校验未通过' }
@@ -288,6 +289,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 			authenticatorType: 1,
 		}
 
+		// 2. 获取用户安全信息
 		const userAuthResult = await selectDataFromMongoDB<UserAuth>(userLoginWhere, userLoginSelect, schemaInstance, collectionName)
 		if (!userAuthResult?.result || userAuthResult.result?.length !== 1) {
 			console.error('ERROR', `用户登录（查询用户信息）时出现异常，用户邮箱：【${email}】，用户未注册或信息异常`)
@@ -295,21 +297,20 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 		}
 
 		const userAuthData = userAuthResult.result[0]
-		const token = userAuthData.token
-		const uid = userAuthData.uid
-		const uuid = userAuthData.UUID
-		const authenticatorType = userAuthData.authenticatorType
+		const { token, uid, UUID: uuid, authenticatorType } = userAuthData
 		if (!token || uid === null || uid === undefined || !uuid) {
 			console.error('ERROR', `登录失败，未能获取用户安全信息`)
 			return { success: false, message: '登录失败，未能获取用户安全信息' }
 		}
 
+		// 3. 检查用户密码是否正确
 		const isCorrectPassword = comparePasswordSync(passwordHash, userAuthData.passwordHashHash)
 		if (!isCorrectPassword) {
 			return { success: false, email, passwordHint: userAuthData.passwordHint, message: '用户密码错误' }
 		}
 
-		if (authenticatorType === 'totp') {
+		// 4. 判断用户是否启用了 2FA
+		if (authenticatorType === 'totp') { // 4.1 TOTP
 			const maxAttempts	 = 5 // 最大尝试次数
 			const lockTime = 60 * 60 * 1000 // 冷却时间
 			const now = new Date().getTime()
@@ -326,7 +327,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 				enabled: true,
 			}
 
-			if (clientOtp.length > 6) { // 大于六位时，视为恢复码进行验证
+			if (clientOtp.length > 6) { // 大于六位时，视为使用 TOTP 恢复码进行登录（登录成功后会删除 TOTP 2FA）
 				const userTotpAuthenticatorSelect: SelectType<UserAuthenticator> = {
 					recoveryCodeHash: 1,
 				}
@@ -354,7 +355,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 					recoveryCodeHash,
 					session
 				}
-				const deleteResult = await deleteTotpAuthenticatorByRecoveryCode(deleteTotpAuthenticatorByRecoveryCodeData)
+				const deleteResult = await deleteTotpAuthenticatorByRecoveryCode(deleteTotpAuthenticatorByRecoveryCodeData) // 如果使用恢复码登陆成功，则删除 TOTP 2FA
 
 				if (!deleteResult.success) {
 					if (session.inTransaction()) {
@@ -368,7 +369,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 				await session.commitTransaction()
 				session.endSession()
 				return { success: true, email, uid, token, UUID: uuid, message: '使用恢复码登录成功，你的 TOTP 2FA 已删除', authenticatorType }
-			} else {
+			} else { // 不大于六位数时，视为使用 TOTP 验证码或 TOTP 备份码进行登录，先视为 TOTP 验证码尝试，如果验证失败，则视为 TOTP 备份码尝试，如果都失败，则响应登陆失败
 				const userTotpAuthenticatorSelect: SelectType<UserAuthenticator> = {
 					secret: 1,
 					backupCodeHash: 1,
@@ -419,7 +420,6 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 					}
 				}
 
-
 				if (!authenticator.check(clientOtp, totpSecret)) {
 					attempts += 1
 					let useCorrectBackupCode = false // 用户是否使用了一个正确的备用码。
@@ -434,14 +434,8 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 					})
 
 					if (!useCorrectBackupCode) {
-							const isNumeric = /^\d+$/.test(clientOtp);
-							if (isNumeric) {
-									console.error('ERROR', '登录失败，验证码错误');
-									return { success: false, message: '登录失败，验证码错误', authenticatorType };
-							} else {
-									console.error('ERROR', '登录失败，备份码不正确');
-									return { success: false, message: '登录失败，备份码不正确', authenticatorType };
-							}
+						console.error('ERROR', '登录失败，验证码或备份码不正确');
+						return { success: false, message: '登录失败，验证码或备份码不正确', authenticatorType };
 					}
 					const session = await mongoose.startSession()
 					session.startTransaction()
@@ -449,7 +443,7 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 					const userLoginByBackupCodeUpdate: UpdateType<UserAuthenticator> = {
 						backupCodeHash: newBackupCodeHash,
 						editDateTime: now,
-						attempts: attempts,
+						attempts,
 						lastAttemptTime: now,
 					}
 
@@ -472,7 +466,6 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 				}
 			}
 		} else if (authenticatorType === 'email') {
-
 			const { verificationCode } = userLoginRequest
 			if (!verificationCode) {
 				console.error('ERROR', '登录失败，启用了邮箱验证但用户未提供验证码')
@@ -505,17 +498,17 @@ export const userLoginService = async (userLoginRequest: UserLoginRequestDto): P
 }
 
 /**
- * 检查一个用户是否存在
- * @param checkUserExistsCheckRequest 检查用户是否存在需要的信息（用户名）
- * @return UserExistsCheckResponseDto 检查结果，如果存在或查询失败则 exists: true
+ * 检查一个用户邮箱是否存在
+ * @param checkUserExistsCheckRequest 检查用户邮箱是否存在需要的信息（用户邮箱）
+ * @return UserExistsCheckResponseDto 检查结果
  */
-export const userExistsCheckService = async (userExistsCheckRequest: UserExistsCheckRequestDto): Promise<UserExistsCheckResponseDto> => {
+export const userEmailExistsCheckService = async (userEmailExistsCheckRequest: UserEmailExistsCheckRequestDto): Promise<UserEmailExistsCheckResponseDto> => {
 	try {
-		if (checkUserExistsCheckRequest(userExistsCheckRequest)) {
+		if (checkUserEmailExistsCheckRequest(userEmailExistsCheckRequest)) {
 			const { collectionName, schemaInstance } = UserAuthSchema
 			type UserAuth = InferSchemaType<typeof schemaInstance>
 			const where: QueryType<UserAuth> = {
-				emailLowerCase: userExistsCheckRequest.email.toLowerCase(),
+				emailLowerCase: userEmailExistsCheckRequest.email.toLowerCase(),
 			}
 			const select: SelectType<UserAuth> = {
 				emailLowerCase: 1,
@@ -526,7 +519,7 @@ export const userExistsCheckService = async (userExistsCheckRequest: UserExistsC
 				result = await selectDataFromMongoDB(where, select, schemaInstance, collectionName)
 			} catch (error) {
 				console.error('ERROR', '验证用户是否存在（查询用户）时出现异常：', error)
-				return { success: false, exists: true, message: '验证用户是否存在时出现异常' }
+				return { success: false, exists: false, message: '验证用户是否存在时出现异常' }
 			}
 
 			if (result && result.success && result.result) {
@@ -536,12 +529,12 @@ export const userExistsCheckService = async (userExistsCheckRequest: UserExistsC
 					return { success: true, exists: false, message: '用户不存在' }
 				}
 			} else {
-				return { success: false, exists: true, message: '查询失败' }
+				return { success: false, exists: false, message: '查询失败' }
 			}
 		}
 	} catch (error) {
 		console.error('ERROR', '查询用户是否存在时出错：', error)
-		return { success: false, exists: true, message: '验证用户是否存在时程序异常' }
+		return { success: false, exists: false, message: '验证用户是否存在时程序异常' }
 	}
 }
 
@@ -790,22 +783,22 @@ export const checkUserExistsByUIDService = async (UserExistsCheckByUIDRequest: U
 				if (result.result?.length === 1) {
 					return { success: true, exists: true, message: '用户存在' }
 				} else {
-					return { success: true, exists: false, message: '获取用户是否存在时失败，用户不存在' }
+					return { success: true, exists: false, message: '用户不存在' }
 				}
 			} else {
 				console.error('ERROR', '获取用户是否存在时失败，查询失败')
-				return { success: false, exists: true, message: '获取用户是否存在时失败' }
+				return { success: false, exists: false, message: '获取用户是否存在时失败，查询失败' }
 			}
 		} else {
 			console.error('ERROR', '获取用户是否存在时失败，请求参数不合法')
-			return { success: false, exists: true, message: '获取用户是否存在时失败，请求参数不合法' }
+			return { success: false, exists: false, message: '获取用户是否存在时失败，请求参数不合法' }
 		}
 	} catch (error) {
 		console.error('ERROR', '获取用户是否存在时失败，未知异常', error)
-		return { success: false, exists: true, message: '获取用户是否存在时失败，未知异常' }
+		return { success: false, exists: false, message: '获取用户是否存在时失败，未知异常' }
 	}
 }
-	
+
 /**
  * 【已废弃】通过 uid 获取当前登录的用户信息
  * // DELETE ME: 禁止使用！该 API 应随着 UUID 普及逐渐被替换
@@ -3801,7 +3794,7 @@ export const sendDeleteUserEmailAuthenticatorService = async (sendDeleteUserEmai
  * @param checkEmailAuthenticatorVerificationCodeRequest 用户通过邮箱验证码验证身份验证器的请求载荷
  * @returns 删除操作的结果
  */
-export const checkEmailAuthenticatorVerificationCodeService = async (checkEmailAuthenticatorVerificationCodeRequest: CheckEmailAuthenticatorVerificationCodeRequestDto): Promise<CheckEmailAuthenticatorVerificationCodeResponseDto> => {
+const checkEmailAuthenticatorVerificationCodeService = async (checkEmailAuthenticatorVerificationCodeRequest: CheckEmailAuthenticatorVerificationCodeRequestDto): Promise<CheckEmailAuthenticatorVerificationCodeResponseDto> => {
 	try {
 		if (!checkEmailAuthenticatorVerificationCodeRequest.email && !checkEmailAuthenticatorVerificationCodeRequest.verificationCode) {
 			console.error('ERROR', '用户通过邮箱验证码验证身份验证器失败时失败，参数不合法')
@@ -4091,13 +4084,13 @@ const checkUserRegistrationData = (userRegistrationRequest: UserRegistrationRequ
 }
 
 /**
- * 用户是否存在验证的请求参数的非空验证
- * @param userExistsCheckRequest
+ * 用户邮箱是否存在验证的请求参数的非空验证
+ * @param userEmailExistsCheckRequest
  * @returns boolean 合法则返回 true
  */
-const checkUserExistsCheckRequest = (userExistsCheckRequest: UserExistsCheckRequestDto): boolean => {
+const checkUserEmailExistsCheckRequest = (userEmailExistsCheckRequest: UserEmailExistsCheckRequestDto): boolean => {
 	// TODO // WARN 这里可能需要更安全的校验机制
-	return (!!userExistsCheckRequest.email && !isInvalidEmail(userExistsCheckRequest.email))
+	return (!!userEmailExistsCheckRequest.email && !isInvalidEmail(userEmailExistsCheckRequest.email))
 }
 
 /**

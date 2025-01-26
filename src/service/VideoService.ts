@@ -249,26 +249,26 @@ export const checkVideoExistByKvidService = async (CheckVideoExistRequestDto: Ch
 				if (result.success && videoResult) {
 					const videosCount = videoResult?.length
 					if (videosCount === 1) {
-						return { "success": true, "message": "视频存在", "exist": true }
+						return { success: true, message: "视频存在", exist: true }
 					} else {
 						console.error('ERROR', '获取到的视频数组长度不等于 1')
-						return { "success": false, "message": "获取视频信息错误，视频不存在", "exist": false }
+						return { success: false, message: "获取视频信息错误，视频不存在", exist: false }
 					}
 				} else {
 					console.error('ERROR', '获取到的视频结果或视频数组为空')
-					return { "success": false, "message": "获取视频信息错误，视频不存在", "exist": false }
+					return { success: false, message: "获取视频信息错误，视频不存在", exist: false }
 				}
 			} catch (error) {
 				console.error('ERROR', '获取视频失败：', error)
-				return { "success": false, "message": "获取视频信息错误，视频不存在", "exist": false }
+				return { success: false, message: "获取视频信息错误，视频不存在", exist: false }
 			}
 		} else {
 			console.error('ERROR', 'KVID 为空')
-			return { "success": false, "message": "获取视频信息错误，KVID 为空", "exist": false }
+			return { success: false, message: "获取视频信息错误，KVID 为空", exist: false }
 		}
 	} catch (error) {
 		console.error('ERROR', '获取视频失败：', error)
-		return { "success": false, "message": "获取视频信息错误，未知错误", "exist": false }
+		return { success: false, message: "获取视频信息错误，未知错误", exist: false }
 	}
 }
 

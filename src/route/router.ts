@@ -26,7 +26,7 @@ import {
 	updateOrCreateUserSettingsController,
 	updateUserEmailController,
 	updateUserPasswordController,
-	userExistsCheckController,
+	userEmailExistsCheckController,
 	userLoginController,
 	userLogoutController,
 	userRegistrationController,
@@ -129,7 +129,7 @@ router.get('/user/checkUserHave2FAByUUID', checkUserHave2FAByUUIDController) // 
 // https://localhost:9999/user/checkUserHave2FAByUUID
 // cookie: uuid, token
 
-router.get('/user/existsCheck', userExistsCheckController) // 注册用户时检查用户是否存在
+router.get('/user/existsCheck', userEmailExistsCheckController) // 注册用户时检查用户邮箱是否存在
 // https://localhost:9999/user/existsCheck?email=xxxxxxx
 
 router.post('/user/update/email', updateUserEmailController) // 更新用户邮箱
@@ -191,7 +191,7 @@ router.get('/user/info', getUserInfoByUidController) // 根据 uid 获取用户�
 
 router.get('/user/exists', userExistsCheckByUIDController) // 检查用户是否存在
 // https://localhost:9999/user/exists?uid=10
-	
+
 router.get('/user/check', checkUserTokenController) // 根据 uid, token 校验用户
 // https://localhost:9999/user/check
 // cookie: uid, token

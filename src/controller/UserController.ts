@@ -22,7 +22,6 @@ import {
 	updateOrCreateUserInfoService,
 	updateOrCreateUserSettingsService,
 	updateUserEmailService,
-	userExistsCheckService,
 	userLoginService,
 	userRegistrationService,
 	getUserInvitationCodeService,
@@ -34,10 +33,10 @@ import {
 	checkUserHave2FAByUUIDService,
 	createUserEmailAuthenticatorService,
 	sendUserEmailAuthenticatorService,
-	checkEmailAuthenticatorVerificationCodeService,
 	deleteUserEmailAuthenticatorService,
 	sendDeleteUserEmailAuthenticatorService,
 	checkUserExistsByUIDService,
+	userEmailExistsCheckService,
 } from '../service/UserService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
 import {
@@ -64,8 +63,8 @@ import {
 	UpdateOrCreateUserSettingsRequestDto,
 	UpdateUserEmailRequestDto,
 	UpdateUserPasswordRequestDto,
+	UserEmailExistsCheckRequestDto,
 	UserExistsCheckByUIDRequestDto,
-	UserExistsCheckRequestDto,
 	UserLoginRequestDto,
 	UserLogoutResponseDto,
 	UserRegistrationRequestDto
@@ -288,14 +287,14 @@ export const checkUserHave2FAByUUIDController = async (ctx: koaCtx, next: koaNex
  * 检查一个用户是否存在
  * @param ctx context
  * @param next context
- * @return UserExistsCheckResultDto 检查结果，如果用户邮箱已存在或查询失败则 exists: true
+ * @return UserEmailExistsCheckResultDto 检查结果，如果用户邮箱已存在或查询失败则 exists: true
  */
-export const userExistsCheckController = async (ctx: koaCtx, next: koaNext) => {
+export const userEmailExistsCheckController = async (ctx: koaCtx, next: koaNext) => {
 	const email = ctx.query.email as string
-	const userExistsCheckData: UserExistsCheckRequestDto = {
+	const userEmailExistsCheckData: UserEmailExistsCheckRequestDto = {
 		email: email || '',
 	}
-	ctx.body = await userExistsCheckService(userExistsCheckData)
+	ctx.body = await userEmailExistsCheckService(userEmailExistsCheckData)
 	await next()
 }
 

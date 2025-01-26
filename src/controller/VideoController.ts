@@ -51,7 +51,7 @@ export const getThumbVideoController = async (ctx: koaCtx, next: koaNext) => {
  * 根据 kvid 获取视频是否存在
  * @param ctx context
  * @param next context
- * @returns	获取视频是否存在
+ * @returns 获取视频是否存在
  */
 export const checkVideoExistController = async (ctx: koaCtx, next: koaNext) => {
 	const videoId = ctx.query.videoId as string
