@@ -26,7 +26,7 @@ import {
 	updateOrCreateUserSettingsController,
 	updateUserEmailController,
 	updateUserPasswordController,
-	userExistsCheckController,
+	userEmailExistsCheckController,
 	userLoginController,
 	userLogoutController,
 	userRegistrationController,
@@ -40,9 +40,10 @@ import {
 	sendUserEmailAuthenticatorController,
 	deleteUserEmailAuthenticatorController,
 	sendDeleteUserEmailAuthenticatorController,
+	userExistsCheckByUIDController,
 } from '../controller/UserController.js'
 import { adminDeleteVideoCommentController, cancelVideoCommentDownvoteController, cancelVideoCommentUpvoteController, deleteSelfVideoCommentController, emitVideoCommentController, emitVideoCommentDownvoteController, emitVideoCommentUpvoteController, getVideoCommentListByKvidController } from '../controller/VideoCommentController.js'
-import { approvePendingReviewVideoController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
+import { approvePendingReviewVideoController, checkVideoExistController, deleteVideoByKvidController, getPendingReviewVideoController, getThumbVideoController, getVideoByKvidController, getVideoByUidController, getVideoCoverUploadSignedUrlController, getVideoFileTusEndpointController, searchVideoByKeywordController, searchVideoByVideoTagIdController, updateVideoController } from '../controller/VideoController.js'
 import { createVideoTagController, getVideoTagByTagIdController, searchVideoTagController } from '../controller/VideoTagController.js'
 
 const router = new Router()
@@ -128,7 +129,7 @@ router.get('/user/checkUserHave2FAByUUID', checkUserHave2FAByUUIDController) // 
 // https://localhost:9999/user/checkUserHave2FAByUUID
 // cookie: uuid, token
 
-router.get('/user/existsCheck', userExistsCheckController) // 注册用户时检查用户是否存在
+router.get('/user/existsCheck', userEmailExistsCheckController) // 注册用户时检查用户邮箱是否存在
 // https://localhost:9999/user/existsCheck?email=xxxxxxx
 
 router.post('/user/update/email', updateUserEmailController) // 更新用户邮箱
@@ -187,6 +188,9 @@ router.post('/user/self', getSelfUserInfoController) // 获取当前登录的用
 
 router.get('/user/info', getUserInfoByUidController) // 根据 uid 获取用户信息
 // https://localhost:9999/user/info?uid=10
+
+router.get('/user/exists', userExistsCheckByUIDController) // 检查用户是否存在
+// https://localhost:9999/user/exists?uid=10
 
 router.get('/user/check', checkUserTokenController) // 根据 uid, token 校验用户
 // https://localhost:9999/user/check
@@ -328,6 +332,9 @@ router.post('/video/upload', updateVideoController) // 上传视频
 
 router.get('/video/home', getThumbVideoController) // 获取首页视频
 // https://localhost:9999/video/home
+
+router.get('/video/exists', checkVideoExistController) // 根据视频 ID (KVID) 检查视频是否存在
+// https://localhost:9999/video/exists?videoId=1
 
 router.get('/video', getVideoByKvidController) // 根据视频 ID (KVID) 获取视频的数据
 // https://localhost:9999/video?videoId=1

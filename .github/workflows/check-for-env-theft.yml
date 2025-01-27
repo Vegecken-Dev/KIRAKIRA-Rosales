@@ -16,11 +16,12 @@ jobs:
       run: |
         git fetch origin ${{ github.base_ref }}
 
-    - name: Search for process.env in diff
+    - name: Search for process.env in code diff
       run: |
-        if git diff --name-only --diff-filter=AM origin/${{ github.base_ref }} | xargs grep -E "process.env"; then
-          echo "Found process.env in changed files, check failed!"
+        # Check for changes in code (not just file names)
+        if git diff origin/${{ github.base_ref }} --unified=0 | grep -E "^\+.*process.env"; then
+          echo "Found process.env in changed code, check failed!"
           exit 1
         else
-          echo "No process.env found in changed files, check passed!"
+          echo "No process.env found in changed code, check passed!"
         fi

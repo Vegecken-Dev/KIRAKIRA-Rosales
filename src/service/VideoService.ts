@@ -5,7 +5,7 @@ import { createCloudflareImageUploadSignedUrl } from '../cloudflare/index.js'
 import { isEmptyObject } from '../common/ObjectTool.js'
 import { generateSecureRandomString } from '../common/RandomTool.js'
 import { CreateOrUpdateBrowsingHistoryRequestDto } from '../controller/BrowsingHistoryControllerDto.js'
-import { ApprovePendingReviewVideoRequestDto, ApprovePendingReviewVideoResponseDto, DeleteVideoRequestDto, DeleteVideoResponseDto, GetVideoByKvidRequestDto, GetVideoByKvidResponseDto, GetVideoByUidRequestDto, GetVideoByUidResponseDto, GetVideoCoverUploadSignedUrlResponseDto, GetVideoFileTusEndpointRequestDto, PendingReviewVideoResponseDto, SearchVideoByKeywordRequestDto, SearchVideoByKeywordResponseDto, SearchVideoByVideoTagIdRequestDto, SearchVideoByVideoTagIdResponseDto, ThumbVideoResponseDto, UploadVideoRequestDto, UploadVideoResponseDto, VideoPartDto } from '../controller/VideoControllerDto.js'
+import { ApprovePendingReviewVideoRequestDto, ApprovePendingReviewVideoResponseDto, CheckVideoExistRequestDto, CheckVideoExistResponseDto, DeleteVideoRequestDto, DeleteVideoResponseDto, GetVideoByKvidRequestDto, GetVideoByKvidResponseDto, GetVideoByUidRequestDto, GetVideoByUidResponseDto, GetVideoCoverUploadSignedUrlResponseDto, GetVideoFileTusEndpointRequestDto, PendingReviewVideoResponseDto, SearchVideoByKeywordRequestDto, SearchVideoByKeywordResponseDto, SearchVideoByVideoTagIdRequestDto, SearchVideoByVideoTagIdResponseDto, ThumbVideoResponseDto, UploadVideoRequestDto, UploadVideoResponseDto, VideoPartDto } from '../controller/VideoControllerDto.js'
 import { DbPoolOptions, deleteDataFromMongoDB, findOneAndUpdateData4MongoDB, insertData2MongoDB, selectDataFromMongoDB } from '../dbPool/DbClusterPool.js'
 import { OrderByType, QueryType, SelectType, UpdateType } from '../dbPool/DbClusterPoolTypes.js'
 import { UserInfoSchema } from '../dbPool/schema/UserSchema.js'
@@ -224,6 +224,51 @@ export const getThumbVideoService = async (): Promise<ThumbVideoResponseDto> => 
 	} catch (error) {
 		console.error('ERROR', '获取首页视频失败：', error)
 		return { success: false, message: '获取首页视频失败', videosCount: 0, videos: [] }
+	}
+}
+
+/**
+ * 根据视频 ID (KVID) 检查视频是否存在
+ * @param getVideoByKvidRequest 根据视频 ID (KVID) 检查视频是否存在的请求载荷
+ * @returns 视频是否存在
+ */
+export const checkVideoExistByKvidService = async (checkVideoExistRequestDto: CheckVideoExistRequestDto): Promise<CheckVideoExistResponseDto> => {
+	try {
+		if (checkGetVideoByKvidRequest(checkVideoExistRequestDto)) {
+			const { collectionName, schemaInstance } = VideoSchema
+			type Video = InferSchemaType<typeof schemaInstance>
+			const where: QueryType<Video> = {
+				videoId: checkVideoExistRequestDto.videoId,
+			}
+			const select: SelectType<Video> = {
+				videoId: 1,
+			}
+			try {
+				const result = await selectDataFromMongoDB<Video>(where, select, schemaInstance, collectionName)
+				const videoResult = result.result
+				if (result.success && videoResult) {
+					const videosCount = videoResult?.length
+					if (videosCount === 1) {
+						return { success: true, message: "视频存在", exist: true }
+					} else {
+						console.error('ERROR', '获取到的视频数组长度不等于 1')
+						return { success: false, message: "获取视频信息错误，视频不存在", exist: false }
+					}
+				} else {
+					console.error('ERROR', '获取到的视频结果或视频数组为空')
+					return { success: false, message: "获取视频信息错误，视频不存在", exist: false }
+				}
+			} catch (error) {
+				console.error('ERROR', '获取视频失败：', error)
+				return { success: false, message: "获取视频信息错误，视频不存在", exist: false }
+			}
+		} else {
+			console.error('ERROR', 'KVID 为空')
+			return { success: false, message: "获取视频信息错误，KVID 为空", exist: false }
+		}
+	} catch (error) {
+		console.error('ERROR', '获取视频失败：', error)
+		return { success: false, message: "获取视频信息错误，未知错误", exist: false }
 	}
 }
 

@@ -1,6 +1,6 @@
-import { approvePendingReviewVideoService, deleteVideoByKvidService, getPendingReviewVideoService, getThumbVideoService, getVideoByKvidService, getVideoByUidRequestService, getVideoCoverUploadSignedUrlService, getVideoFileTusEndpointService, searchVideoByKeywordService, searchVideoByVideoTagIdService, updateVideoService } from '../service/VideoService.js'
+import { approvePendingReviewVideoService, checkVideoExistByKvidService, deleteVideoByKvidService, getPendingReviewVideoService, getThumbVideoService, getVideoByKvidService, getVideoByUidRequestService, getVideoCoverUploadSignedUrlService, getVideoFileTusEndpointService, searchVideoByKeywordService, searchVideoByVideoTagIdService, updateVideoService } from '../service/VideoService.js'
 import { koaCtx, koaNext } from '../type/koaTypes.js'
-import { ApprovePendingReviewVideoRequestDto, DeleteVideoRequestDto, GetVideoByKvidRequestDto, GetVideoByUidRequestDto, GetVideoFileTusEndpointRequestDto, SearchVideoByKeywordRequestDto, SearchVideoByVideoTagIdRequestDto, UploadVideoRequestDto } from './VideoControllerDto.js'
+import { ApprovePendingReviewVideoRequestDto, CheckVideoExistRequestDto, DeleteVideoRequestDto, GetVideoByKvidRequestDto, GetVideoByUidRequestDto, GetVideoFileTusEndpointRequestDto, SearchVideoByKeywordRequestDto, SearchVideoByVideoTagIdRequestDto, UploadVideoRequestDto } from './VideoControllerDto.js'
 
 /**
  * 上传视频
@@ -44,6 +44,22 @@ export const updateVideoController = async (ctx: koaCtx, next: koaNext) => {
 export const getThumbVideoController = async (ctx: koaCtx, next: koaNext) => {
 	const getThumbVideoResponse = await getThumbVideoService()
 	ctx.body = getThumbVideoResponse
+	await next()
+}
+
+/**
+ * 根据 kvid 获取视频是否存在
+ * @param ctx context
+ * @param next context
+ * @returns 获取视频是否存在
+ */
+export const checkVideoExistController = async (ctx: koaCtx, next: koaNext) => {
+	const videoId = ctx.query.videoId as string
+	const CheckVideoExistRequestDto: CheckVideoExistRequestDto = {
+		videoId: videoId ? parseInt(videoId, 10) : -1, // WARN -1 means you can't find any video
+	}
+	const getVideoByKvidResponse = await checkVideoExistByKvidService(CheckVideoExistRequestDto)
+	ctx.body = getVideoByKvidResponse
 	await next()
 }
 
