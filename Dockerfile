@@ -16,6 +16,12 @@ RUN npm install
 # 将其他源代码文件复制到工作目录
 COPY . .
 
+# 安装crowdin-cli（如果没有安装的话）
+RUN npm install -g @crowdin/crowdin-cli
+
+# 下载 Crowdin 翻译文件
+RUN crowdin download
+
 # build
 RUN npm run build
 

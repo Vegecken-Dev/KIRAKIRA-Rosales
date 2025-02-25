@@ -33,6 +33,8 @@
 		"axios": "^1.4.0",
 		"bcrypt": "^5.1.1",
 		"emailjs": "^4.0.3",
+		"i18next": "^24.2.2",
+		"i18next-http-backend": "^3.0.2",
 		"js-base64": "^3.7.5",
 		"koa": "^2.14.1",
 		"koa-bodyparser": "^4.4.0",
